@@ -77,8 +77,8 @@ def get_data():
 
 # Create database if not already exists
 init_db()
-url = 'http://127.0.0.1:5500/dummy.html'  # Development URL
-# url = 'https://www.vkr.se/SlaHist/sla.htm' # Real URL
+# url = 'http://127.0.0.1:5500/dummy.html'  # Development URL
+url = 'https://www.vkr.se/SlaHist/sla.htm' # Real URL
 
 # Fetch and store data every 15 minutes
 def fetch_periodically():
@@ -87,7 +87,7 @@ def fetch_periodically():
         print("Fetching and storing data...")
         fetch_and_store(url)
         print("Waiting for 15 minutes...")
-        time.sleep(1)  # Wait for 900 seconds (15 minutes)
+        time.sleep(900)  # Wait for 900 seconds (15 minutes)
 
 # Start the periodic fetch function in a separate thread
 fetch_thread = threading.Thread(target=fetch_periodically)
