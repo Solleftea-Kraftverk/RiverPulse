@@ -3,12 +3,19 @@ async function fetchData() {
     const response = await fetch('http://127.0.0.1:5000/data');
     const data = await response.json();
 
-    // Prepare data for the chart
-    const timestamps = data.map(item => item[0]);  // Extract timestamps
-    const waterLevels = data.map(item => item[1]); // Extract water levels
-    const flowValues = data.map(item => item[2]);  // Extract flow values
+    // 🌟 Filtreringssteg: Behåll endast data från år 2025 och framåt
+    const filteredData = data.filter(item => {
+        const timestamp = item[0];
+        const date = new Date(timestamp);
+        return date.getFullYear() >= 2025;
+    });
 
-    // Create the chart
+    // Förbered data för diagrammet - använd den filtrerade datan
+    const timestamps = filteredData.map(item => item[0]);
+    const waterLevels = filteredData.map(item => item[1]);
+    const flowValues = filteredData.map(item => item[2]);
+
+    // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
 }
 
