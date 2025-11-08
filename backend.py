@@ -7,6 +7,7 @@ from flask import Flask, jsonify
 import threading
 import re
 from flask_cors import CORS
+from flask import send_from_directory
 
 DATABASE = 'data.db'
 
@@ -63,9 +64,21 @@ def fetch_and_store(url):
         save_data(water_level, flow, latest_update)
     else:
         print(f"At least one parameter was not found! The parameters returned as: Water level: [{water_level}] Flow: [{flow}] Latest update: [{latest_update}]")
-
-app = Flask(__name__)  # Initialize the Flask app
+app = Flask(__name__) # Initialize the Flask app
 CORS(app)  # Allows frontend (port 5000) to access backend (port 5500)
+
+@app.route('/') 
+def serve_index(): 
+    return send_from_directory('static', 'index.html')
+
+@app.route('/list')
+def serve_list():
+    return send_from_directory('static', 'list.html')
+
+@app.route('/dummy')
+def serve_dummy():
+    return send_from_directory('static', 'dummy.html')
+
 @app.route('/data', methods=['GET'])
 def get_data():
     conn = sqlite3.connect(DATABASE)
@@ -93,6 +106,12 @@ def fetch_periodically():
 fetch_thread = threading.Thread(target=fetch_periodically)
 fetch_thread.daemon = True  # This makes the thread exit when the main program exits
 fetch_thread.start()
+
+import os
+print("Current working directory:", os.getcwd())
+print("Static folder absolute path:", os.path.abspath('static'))
+print("Files in static:", os.listdir('static'))
+
 app.run(debug=True, use_reloader=False)  # Start the Flask server
 
 
