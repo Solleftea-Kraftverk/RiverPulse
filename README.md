@@ -1,4 +1,4 @@
-# River Pulse
+# River Pulse test
 Need python3 and npm.\
 Runs on your http://127.0.0.1:5000/ \
 http://127.0.0.1:5000/list - just the database visualized\
