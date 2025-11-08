@@ -3,7 +3,7 @@ async function fetchData() {
     const response = await fetch('http://127.0.0.1:5000/data');
     const data = await response.json();
 
-    // 🌟 Filtreringssteg: Behåll endast data från år 2025 och framåt
+    // Filtreringssteg: Behåll endast data från år 2025 och framåt
     const filteredData = data.filter(item => {
         const timestamp = item[0];
         const date = new Date(timestamp);
@@ -19,7 +19,7 @@ async function fetchData() {
     createChart(timestamps, waterLevels, flowValues);
 }
 
-// Function to create the chart
+// Function to create the chart med dubbla Y-axlar
 function createChart(timestamps, waterLevels, flowValues) {
     const ctx = document.getElementById('myChart').getContext('2d');
     
@@ -28,33 +28,66 @@ function createChart(timestamps, waterLevels, flowValues) {
         data: {
             labels: timestamps,  // x-axis: timestamps
             datasets: [{
-                label: 'Water Level (m)',  // y-axis: Water level
+                // Dataset 1: Vattennivå (Använder 'water-level' axeln)
+                label: 'Water Level (m)',
                 data: waterLevels,
                 borderColor: 'blue',
-                fill: false
+                fill: false,
+                yAxisID: 'water-level' // <-- Länkar till vänster axel
             },
             {
-                label: 'Flow (m³/s)',  // y-axis: Flow
+                // Dataset 2: Flöde (Använder 'flow-rate' axeln)
+                label: 'Flow (m³/s)',
                 data: flowValues,
                 borderColor: 'green',
-                fill: false
+                fill: false,
+                yAxisID: 'flow-rate' // <-- Länkar till höger axel
             }]
         },
         options: {
             responsive: true,
+            // DEFINIERAR ALLA AXLAR
             scales: {
+                // X-AXEL
                 x: {
-                    type: 'category',  // x-axis: categorical (timestamps)
+                    type: 'category',
                     title: {
                         display: true,
                         text: 'Timestamp'
                     }
                 },
-                y: {
+                
+                // Y-AXEL 1 (Vattennivå)
+                'water-level': { 
+                    type: 'linear',
+                    position: 'left',
                     title: {
                         display: true,
-                        text: 'Value'
+                        text: 'Water Level (m)',
+                        color: 'blue'
+                    },
+                    ticks: {
+                        color: 'blue'
                     }
+                },
+                
+                // Y-AXEL 2 (Flöde)
+                'flow-rate': { 
+                    type: 'linear',
+                    position: 'right', // Placera till höger
+                    title: {
+                        display: true,
+                        text: 'Flow (m³/s)',
+                        color: 'green'
+                    },
+                    ticks: {
+                        color: 'green'
+                    },
+                    // Bra att stänga av rutnätet för den högra axeln
+                    // för att undvika visuellt brus
+                    grid: { 
+                        drawOnChartArea: false 
+                    } 
                 }
             }
         }
