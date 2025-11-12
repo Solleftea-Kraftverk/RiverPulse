@@ -15,6 +15,11 @@ async function fetchData() {
     const waterLevels = filteredData.map(item => item.water_level);
     const flowValues = filteredData.map(item => item.flow);
 
+    // Debug utskrifter för att verifiera datan
+    console.log('Timestamps:', timestamps);
+    console.log('Water Levels:', waterLevels);
+    console.log('Flow Values:', flowValues);
+
     // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
 }
