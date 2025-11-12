@@ -1,6 +1,6 @@
 // Async function to fetch data from backend
 async function fetchData() {
-    const response = await fetch('http://127.0.0.1:5000/data');
+    const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
     const data = await response.json();
 
     // Filtreringssteg: Behåll endast data från år 2025 och framåt

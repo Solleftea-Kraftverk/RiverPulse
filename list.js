@@ -1,7 +1,7 @@
 // Define an async function to fetch and display data
 async function fetchData() {
     try {
-      const response = await fetch('http://127.0.0.1:5000/data');
+      const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
       const data = await response.json();
   
       // Log the data to console (for debugging)
