@@ -11,9 +11,9 @@ async function fetchData() {
     });
 
     // Förbered data för diagrammet - använd den filtrerade datan
-    const timestamps = filteredData.map(item => item[0]);
-    const waterLevels = filteredData.map(item => item[1]);
-    const flowValues = filteredData.map(item => item[2]);
+    const timestamps = filteredData.map(item => item.timestamp);
+    const waterLevels = filteredData.map(item => item.water_level);
+    const flowValues = filteredData.map(item => item.flow);
 
     // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
