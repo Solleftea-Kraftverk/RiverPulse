@@ -13,6 +13,11 @@ async function fetchData() {
     const waterLevels = data.map(item => item.water_level);
     const flowValues = data.map(item => item.flow);
 
+    // Reverse all arrays to show oldest first
+    timestamps = timestamps.reverse();
+    waterLevels = waterLevels.reverse();
+    flowValues = flowValues.reverse();
+
     // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
 }
