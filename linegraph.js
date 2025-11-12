@@ -10,7 +10,16 @@ async function fetchData() {
     });
 
     // Förbered data för diagrammet - använd den filtrerade datan
-    const timestamps = filteredData.map(item => item.timestamp);
+    const timestamps = filteredData.map(item => {
+        const date = new Date(item.timestamp);
+        return date.toLocaleString('sv-SE', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    });
+
     const waterLevels = filteredData.map(item => item.water_level);
     const flowValues = filteredData.map(item => item.flow);
 
@@ -58,10 +67,15 @@ function createChart(timestamps, waterLevels, flowValues) {
                     type: 'category',
                     title: {
                         display: true,
-                        text: 'Timestamp'
+                        text: 'Tidpunkt'
+                    },
+                    ticks: {
+                        maxRotation: 45,    // Tilt the labels slightly for readability
+                        minRotation: 45,
+                        autoSkip: true,     // Don’t show every single label if there are many
+                        maxTicksLimit: 10   // Show at most ~10 labels
                     }
                 },
-                
                 // Y-AXEL 1 (Vattennivå)
                 'water-level': { 
                     type: 'linear',
