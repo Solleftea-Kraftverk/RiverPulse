@@ -5,8 +5,7 @@ async function fetchData() {
 
     // Filtreringssteg: Behåll endast data från år 2025 och framåt
     const filteredData = data.filter(item => {
-        const timestamp = item[0];
-        const date = new Date(timestamp);
+        const date = new Date(item.timestamp);
         return date.getFullYear() >= 2025;
     });
 
@@ -23,6 +22,7 @@ async function fetchData() {
     // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
 }
+
 
 // Function to create the chart med dubbla Y-axlar
 function createChart(timestamps, waterLevels, flowValues) {
