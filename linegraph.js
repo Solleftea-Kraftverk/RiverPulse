@@ -4,14 +4,14 @@ async function fetchData() {
     const data = await response.json();
 
     // Extract only the date and time from 'latest_update', removing the Swedish prefix
-    const timestamps = data.map(item => {
+    let timestamps = data.map(item => {
         // Example input: "Senast uppdaterat 2025-11-13 00:00"
         // Remove "Senast uppdaterat " prefix
         return item.latest_update.replace(/^Senast uppdaterat\s*/, '');
     });
 
-    const waterLevels = data.map(item => item.water_level);
-    const flowValues = data.map(item => item.flow);
+    let waterLevels = data.map(item => item.water_level);
+    let flowValues = data.map(item => item.flow);
 
     // Reverse all arrays to show oldest first
     timestamps = timestamps.reverse();
