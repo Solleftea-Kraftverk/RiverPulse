@@ -3,30 +3,15 @@ async function fetchData() {
     const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
     const data = await response.json();
 
-    // Filtreringssteg: Behåll endast data från år 2025 och framåt
-    const filteredData = data.filter(item => {
-        const date = new Date(item.timestamp);
-        return date.getFullYear() >= 2025;
+    // Extract only the date and time from 'latest_update', removing the Swedish prefix
+    const timestamps = data.map(item => {
+        // Example input: "Senast uppdaterat 2025-11-13 00:00"
+        // Remove "Senast uppdaterat " prefix
+        return item.latest_update.replace(/^Senast uppdaterat\s*/, '');
     });
 
-    // Förbered data för diagrammet - använd den filtrerade datan
-    const timestamps = filteredData.map(item => {
-        const date = new Date(item.timestamp);
-        return date.toLocaleString('sv-SE', {
-            day: '2-digit',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    });
-
-    const waterLevels = filteredData.map(item => item.water_level);
-    const flowValues = filteredData.map(item => item.flow);
-
-    // Debug utskrifter för att verifiera datan
-    console.log('Timestamps:', timestamps);
-    console.log('Water Levels:', waterLevels);
-    console.log('Flow Values:', flowValues);
+    const waterLevels = data.map(item => item.water_level);
+    const flowValues = data.map(item => item.flow);
 
     // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
