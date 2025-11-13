@@ -3,20 +3,26 @@ async function fetchData() {
     const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
     const data = await response.json();
 
-    // Extract only the date and time from 'latest_update', removing the Swedish prefix
-    const timestamps = data.map(item => {
-        // Example input: "Senast uppdaterat 2025-11-13 00:00"
+    // Filter data: keep only items where latest_update year is 2025 or later
+    const filteredData = data.filter(item => {
+        // Remove prefix, then parse date part of latest_update
+        const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
+        const year = new Date(dateStr).getFullYear();
+        return year >= 2025;
+    });
+
+    // Extract timestamps from filtered data
+    const timestamps = filteredData.map(item => {
         // Remove "Senast uppdaterat " prefix
         return item.latest_update.replace(/^Senast uppdaterat\s*/, '');
     });
 
-    const waterLevels = data.map(item => item.water_level);
-    const flowValues = data.map(item => item.flow);
+    const waterLevels = filteredData.map(item => item.water_level);
+    const flowValues = filteredData.map(item => item.flow);
 
     // Skapa diagrammet
     createChart(timestamps, waterLevels, flowValues);
 }
-
 
 // Function to create the chart med dubbla Y-axlar
 function createChart(timestamps, waterLevels, flowValues) {
