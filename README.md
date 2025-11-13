@@ -11,5 +11,5 @@ Databasen är https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev
 - Back to src ctrl
 - Stage/add the changes I want to add (if not all)
 - If all then just do Commit. But first do commit msg (AI symbol)
-- 
+- Press blue button as long as it is blue button
 
