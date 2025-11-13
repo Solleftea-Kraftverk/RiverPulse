@@ -32,6 +32,8 @@ function createChart(timestamps, waterLevels, flowValues) {
                 data: waterLevels,
                 borderColor: 'blue',
                 fill: false,
+                pointRadius: 3,
+                pointHoverRadius: 5,
                 yAxisID: 'water-level' // <-- Länkar till vänster axel
             },
             {
@@ -40,6 +42,8 @@ function createChart(timestamps, waterLevels, flowValues) {
                 data: flowValues,
                 borderColor: 'green',
                 fill: false,
+                pointRadius: 3,
+                pointHoverRadius: 5,
                 yAxisID: 'flow-rate' // <-- Länkar till höger axel
             }]
         },
