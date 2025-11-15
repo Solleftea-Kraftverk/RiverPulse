@@ -1,15 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>River Pulse</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>River Pulse - Nivå och Flöde</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        /* Modern, responsiv CSS */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+            min-height: 100vh; /* Se till att body täcker hela viewport-höjden */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px; /* Maxbredd för större skärmar */
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+
+        /* Responsivitet för diagrammets behållare */
+        #chart-container {
+            position: relative;
+            height: 60vh; /* Höjd baserat på viewport (responsiv) */
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        /* Filterstil */
+        .filter-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap; /* För mobilvänlighet */
+        }
+        
+        .filter-controls label {
+            background-color: #e0e0e0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        
+        .filter-controls input[type="radio"] {
+            display: none;
+        }
+        
+        .filter-controls input[type="radio"]:checked + label {
+            background-color: #1a73e8;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer/Kontaktinformation */
+        .contact-info {
+            width: 100%;
+            max-width: 1200px;
+            text-align: right;
+            padding: 10px 0;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .contact-info a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
 </head>
 <body>
-    <h1>Level and Flow Over Time</h1>
+    <div class="container">
+        <h1>💧 River Pulse: Nivå och Flöde Över Tid</h1>
 
-    <canvas id="myChart" width="400" height="200"></canvas>
+        <div class="filter-controls">
+            <input type="radio" id="filter-day" name="time-filter" value="day" checked>
+            <label for="filter-day">Senaste Dagen</label>
+
+            <input type="radio" id="filter-week" name="time-filter" value="week">
+            <label for="filter-week">Senaste Veckan</label>
+
+            <input type="radio" id="filter-month" name="time-filter" value="month">
+            <label for="filter-month">Senaste Månaden</label>
+
+            <input type="radio" id="filter-year" name="time-filter" value="year">
+            <label for="filter-year">Senaste Året</label>
+        </div>
+
+        <div id="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+
+    <div class="contact-info">
+        För återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a>
+    </div>
 
     <script src="linegraph.js"></script>
 </body>
