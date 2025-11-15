@@ -3,63 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>River Pulse - Nivå och Flöde</title>
+    <title>🌊 River Pulse - Hydrodata</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
     <style>
-        /* Modern, responsiv CSS */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        /* Modern, konstnärlig och responsiv CSS för helskärmsläge */
+        :root {
+            --bg-color: #121212; /* Mörk bakgrund */
+            --primary-color: #00bcd4; /* Cyan/Turkos (Vattenkänsla) */
+            --secondary-color: #e91e63; /* Magenta (Flödesenergi) */
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --font-stack: 'Roboto Mono', monospace; /* Lättläsligt, tekniskt typsnitt */
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+
+        html, body {
+            height: 100%;
             margin: 0;
+            padding: 0;
+            font-family: var(--font-stack);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden; /* Förhindra horisontell scrollning */
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
             padding: 20px;
-            background-color: #f4f7f9;
-            color: #333;
-            min-height: 100vh; /* Se till att body täcker hela viewport-höjden */
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .container {
-            width: 100%;
-            max-width: 1200px; /* Maxbredd för större skärmar */
-            margin: 0 auto;
-            padding: 20px;
-            background: #fff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-
         h1 {
             text-align: center;
-            color: #1a73e8;
-            margin-bottom: 20px;
+            color: var(--primary-color);
+            margin: 10px 0 15px 0; /* Mer yt-effektiv rubrik */
+            font-size: 1.5em; /* Liten rubrik */
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         /* Responsivitet för diagrammets behållare */
         #chart-container {
             position: relative;
-            height: 60vh; /* Höjd baserat på viewport (responsiv) */
+            /* Utnyttja höjden effektivt: 80vh minus rubrik och filter */
+            height: calc(100vh - 150px); 
             width: 100%;
+            max-width: 1400px;
             margin-bottom: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.15); /* Subtil glöd */
         }
         
-        /* Filterstil */
+        /* Filterstil - Mer tekniskt utseende */
         .filter-controls {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 10px;
             margin-bottom: 25px;
-            flex-wrap: wrap; /* För mobilvänlighet */
+            flex-wrap: wrap; 
         }
         
         .filter-controls label {
-            background-color: #e0e0e0;
-            padding: 8px 15px;
-            border-radius: 20px;
+            background-color: var(--card-bg);
+            padding: 8px 12px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.2s;
-            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s, border 0.2s;
+            font-weight: 400;
+            font-size: 0.9em;
+            border: 1px solid #333;
         }
         
         .filter-controls input[type="radio"] {
@@ -67,26 +89,28 @@
         }
         
         .filter-controls input[type="radio"]:checked + label {
-            background-color: #1a73e8;
-            color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0, 188, 212, 0.5);
         }
 
-        /* Footer/Kontaktinformation */
+        /* Fotnot & Kontaktinformation */
         .contact-info {
+            font-size: 0.75em;
+            color: #616161;
+            display: flex;
+            justify-content: space-between;
             width: 100%;
-            max-width: 1200px;
-            text-align: right;
-            padding: 10px 0;
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 15px;
+            max-width: 1400px;
+            padding: 5px 15px;
+            margin-top: auto; /* Trycker ner fotnoten */
         }
 
         .contact-info a {
-            color: #1a73e8;
+            color: var(--primary-color);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 400;
         }
 
         .contact-info a:hover {
@@ -97,11 +121,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>💧 River Pulse: Nivå och Flöde Över Tid</h1>
+        <h1>Hydrodata: Nivå och Flöde Över Tid</h1>
 
         <div class="filter-controls">
             <input type="radio" id="filter-day" name="time-filter" value="day" checked>
-            <label for="filter-day">Senaste Dagen</label>
+            <label for="filter-day">Senaste 24 tim.</label>
 
             <input type="radio" id="filter-week" name="time-filter" value="week">
             <label for="filter-week">Senaste Veckan</label>
@@ -116,10 +140,11 @@
         <div id="chart-container">
             <canvas id="myChart"></canvas>
         </div>
-    </div>
 
-    <div class="contact-info">
-        För återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a>
+        <div class="contact-info">
+            <span>Data fr.o.m. 2025-01-01</span>
+            <span>Återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a></span>
+        </div>
     </div>
 
     <script src="linegraph.js"></script>
