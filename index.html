@@ -10,13 +10,12 @@
     <style>
         /* CSS baserad på en Dark/High-Contrast palett */
         :root {
-            /* Högkontrast palett */
-            --bg-color: #1a1a2e; /* Deep Navy/Indigo */
-            --card-bg: #1f2038; /* Lättare bakgrund för kort/diagram */
-            --primary-color: #00b4d8; /* Klar Cyan/Sky Blue (Nivå) */
-            --secondary-color: #ff7f50; /* Klar Orange/Korall (Flöde) */
-            --text-color-light: #f0f0f0; /* Off-white */
-            --text-color-dark: #a9a9b3; /* Mjuk grå för axlar/detaljer */
+            --bg-color: #1a1a2e; 
+            --card-bg: #1f2038; 
+            --primary-color: #00b4d8; 
+            --secondary-color: #ff7f50; 
+            --text-color-light: #f0f0f0; 
+            --text-color-dark: #a9a9b3; 
             --font-stack: 'Roboto Mono', monospace; 
         }
 
@@ -40,6 +39,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* Extra utrymme för den fasta fotnoten */
             padding-bottom: 50px; 
         }
 
@@ -49,26 +49,14 @@
             margin: 5px 0 10px 0; 
             font-size: 1.6em; 
             font-weight: 700;
-            /* FIX: Tog bort text-transform: uppercase; */
+            /* FIX: Rubriken är nu i standardformat (ingen uppercase) */
         }
         
-        /* Flexibel behållare för diagram och widget. */
-        .chart-and-widget-wrapper {
-            display: flex;
-            flex-direction: row; /* Standard: sida vid sida på stor skärm */
-            width: 100%;
-            flex-grow: 1;
-            gap: 15px;
-            max-height: calc(100vh - 180px); /* Justera höjden så det ryms */
-        }
-
-        /* Diagrambehållaren tar upp större delen av utrymmet */
+        /* FIX: Diagrambehållaren återställd till att ta upp all ledig plats */
         #chart-container {
             position: relative;
             flex-grow: 1; 
-            /* Flex-shrink: 0 för att se till att den behåller en storlek */
-            flex-basis: 70%; 
-            min-width: 0; 
+            width: 100%; 
             margin-bottom: 10px;
             background: var(--card-bg);
             border-radius: 8px;
@@ -77,48 +65,7 @@
             min-height: 200px; 
         }
 
-        /* FIX: Separat widget för de senaste värdena */
-        #latest-values-widget {
-            /* Flex-shrink: 0 för att se till att den inte krymper för mycket */
-            flex-basis: 30%; 
-            min-width: 250px; 
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(255, 127, 80, 0.15);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .value-card {
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid var(--text-color-dark);
-        }
-
-        .value-card h3 {
-            font-size: 0.9em;
-            margin: 0 0 5px 0;
-            font-weight: 400;
-            color: var(--text-color-dark);
-        }
-
-        .value-card p {
-            font-size: 1.8em;
-            font-weight: 700;
-            margin: 0;
-        }
-        
-        .value-card.level {
-            border-left: 5px solid var(--primary-color);
-        }
-
-        .value-card.flow {
-            border-left: 5px solid var(--secondary-color);
-        }
-
-        /* Filter och Fotnot CSS (från föregående steg, oförändrat) */
+        /* Filter CSS (oförändrat) */
         .filter-controls {
             display: flex;
             justify-content: center;
@@ -145,6 +92,7 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
+        /* Fotnot CSS (oförändrat) */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -156,7 +104,7 @@
             display: flex;
             justify-content: space-between;
             padding: 10px 20px;
-            background: rgba(26, 26, 46, 0.95); /* Mindre transparent bakgrund */
+            background: rgba(26, 26, 46, 0.95); 
             z-index: 1000; 
             border-top: 1px solid rgba(0, 180, 216, 0.1);
         }
@@ -167,24 +115,7 @@
             font-weight: 400;
         }
         
-        /* Mediafråga för mobilanpassning */
-        @media (max-width: 800px) {
-            .chart-and-widget-wrapper {
-                flex-direction: column; /* Stapla diagram och widget */
-                max-height: none;
-            }
-            
-            #latest-values-widget {
-                flex-basis: auto; 
-                min-width: unset; 
-                flex-direction: row; /* Visa värdena sida vid sida i mobil */
-                justify-content: space-around;
-            }
-            
-            .value-card {
-                flex-basis: 50%;
-            }
-
+        @media (max-width: 600px) {
             .contact-info {
                 flex-direction: column;
                 align-items: center;
@@ -213,22 +144,10 @@
             <label for="filter-year">Senaste Året</label>
         </div>
 
-        <div class="chart-and-widget-wrapper">
-            <div id="chart-container">
-                <canvas id="myChart"></canvas>
-            </div>
-
-            <div id="latest-values-widget">
-                <div class="value-card level">
-                    <h3>Senaste Nivå (m)</h3>
-                    <p id="latest-level-value">--</p>
-                </div>
-                <div class="value-card flow">
-                    <h3>Senaste Flöde (m³/s)</h3>
-                    <p id="latest-flow-value">--</p>
-                </div>
-            </div>
+        <div id="chart-container">
+            <canvas id="myChart"></canvas>
         </div>
+        
     </div>
 
     <div class="contact-info">
