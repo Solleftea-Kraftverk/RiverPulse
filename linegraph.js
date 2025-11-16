@@ -2,21 +2,26 @@
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
 let chartInstance = null;
+// FIX: Gör chartInstance globalt tillgänglig för extern JS (t.ex. i index.html för rotation)
+window.chartInstance = chartInstance; 
 // Definierar den tidigaste tillåtna datan: 2025-11-08 i millisekunder
 const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00'); 
+
+// FIX: Konstanter för CSS fallbacks (för ökad prestanda och renare kod)
+const CSS_FALLBACKS = {
+    '--primary-color': '#00b4d8', 
+    '--secondary-color': '#ff7f50', 
+    '--text-color-light': '#f0f0f0', 
+    '--text-color-dark': '#a9a9b3', 
+    '--font-stack': 'Roboto Mono, monospace',
+    '--card-bg': '#1f2038'
+};
 
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
-    // Returnerar CSS-variabeln eller en fallback om den saknas
-    return style.getPropertyValue(name).trim() || {
-        '--primary-color': '#00b4d8', 
-        '--secondary-color': '#ff7f50', 
-        '--text-color-light': '#f0f0f0', 
-        '--text-color-dark': '#a9a9b3', 
-        '--font-stack': 'Roboto Mono, monospace',
-        '--card-bg': '#1f2038'
-    }[name] || ''; 
+    // Använder CSS_FALLBACKS för en robust fallback
+    return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
 // FIX: Plugin för att visa de senaste värdena.
@@ -94,9 +99,18 @@ async function fetchData() {
             .map(item => {
                 const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
                 item.timestamp = Date.parse(dateStr); 
+                // FIX: Konvertera till float tidigt
+                item.water_level = parseFloat(item.water_level);
+                item.flow = parseFloat(item.flow);
                 return item;
             })
-            .filter(item => !isNaN(item.timestamp) && item.timestamp >= MIN_TIMESTAMP);
+            .filter(item => 
+                !isNaN(item.timestamp) && 
+                item.timestamp >= MIN_TIMESTAMP &&
+                // NY ROBUSTHETSKONTROLL: Säkerställ att nivå och flöde är faktiska siffror
+                !isNaN(item.water_level) &&
+                !isNaN(item.flow)
+            );
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -171,6 +185,8 @@ function applyFilter(filter) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
+        // FIX: Se till att den globala fönsterinstansen uppdateras efter skapandet
+        window.chartInstance = chartInstance;
     }
 }
 

@@ -22,7 +22,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
-            height: 100%;
+            /* FIX: Använd 100vh för att maximera utrymmet, viktigt för mobila webbläsare */
+            height: 100dvh; 
             margin: 0;
             padding: 0;
             font-family: var(--font-stack);
@@ -33,14 +34,16 @@
 
         .container {
             width: 100vw;
-            min-height: 100vh;
+            /* FIX: Använd 100% av viewportens dynamiska höjd */
+            min-height: 100dvh; 
             padding: 15px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* Extra utrymme för den fasta fotnoten */
             padding-bottom: 50px; 
+            max-width: 1400px; 
+            margin: 0 auto;
         }
 
         h1 {
@@ -49,12 +52,11 @@
             margin: 5px 0 10px 0; 
             font-size: 1.6em; 
             font-weight: 700;
-            /* FIX: Rubriken är nu i standardformat (ingen uppercase) */
         }
         
-        /* FIX: Diagrambehållaren återställd till att ta upp all ledig plats */
         #chart-container {
             position: relative;
+            /* FIX: Låter diagrammet ta upp all vertikal yta */
             flex-grow: 1; 
             width: 100%; 
             margin-bottom: 10px;
@@ -65,24 +67,24 @@
             min-height: 200px; 
         }
 
-        /* Filter CSS (oförändrat) */
         .filter-controls {
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 10px; /* Minskad gap för tightare mobilvy */
             margin-bottom: 15px;
             flex-wrap: wrap; 
         }
         
         .filter-controls label {
             background-color: var(--card-bg);
-            padding: 8px 14px;
+            padding: 8px 12px; /* Minskad padding för tightare mobilvy */
             border-radius: 20px; 
             cursor: pointer;
             transition: background-color 0.2s;
             font-weight: 400;
             font-size: 0.9em;
             border: 1px solid var(--text-color-dark);
+            white-space: nowrap; /* Förhindra radbrytning */
         }
         
         .filter-controls input[type="radio"]:checked + label {
@@ -92,7 +94,6 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
-        /* Fotnot CSS (oförändrat) */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -123,6 +124,11 @@
                 font-size: 0.75em;
                 padding: 8px 10px;
             }
+            /* Extra justering för små skärmar (t.ex. äldre mobiler) */
+             .filter-controls label {
+                font-size: 0.8em;
+                padding: 6px 10px;
+            }
         }
     </style>
 </head>
@@ -132,29 +138,62 @@
 
         <div class="filter-controls">
             <input type="radio" id="filter-day" name="time-filter" value="day" checked>
-            <label for="filter-day">Senaste 24 tim.</label>
+            <label for="filter-day">24 tim.</label> 
 
             <input type="radio" id="filter-week" name="time-filter" value="week">
-            <label for="filter-week">Senaste Veckan</label>
+            <label for="filter-week">Veckan</label>
 
             <input type="radio" id="filter-month" name="time-filter" value="month">
-            <label for="filter-month">Senaste Månaden</label>
+            <label for="filter-month">Månaden</label>
 
             <input type="radio" id="filter-year" name="time-filter" value="year">
-            <label for="filter-year">Senaste Året</label>
+            <label for="filter-year">Året</label>
         </div>
 
         <div id="chart-container">
-            <canvas id="myChart"></canvas>
+            <canvas id="myChart" role="img" aria-label="Linjediagram som visar vattennivå och flöde över tid, med valbart tidsfilter."></canvas>
         </div>
         
     </div>
 
     <div class="contact-info">
+        <span>Datakälla: <a href="https://vkr.se" target="_blank">vkr.se</a></span>
         <span>Data fr.o.m. 2025-11-08</span>
         <span>Återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a></span>
     </div>
 
-    <script src="linegraph.js"></script>
+    <script src="linegraph.js" defer></script>
+    
+    <script>
+        // Håller reda på den senaste orienteringen
+        let lastOrientation = window.orientation;
+
+        // Kontrollerar om vi är i ett mobil- eller tablettläge
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function handleOrientationChange() {
+            // Kontrollera om enheten faktiskt roteras och om det är en mobil enhet
+            if (isMobileDevice() && window.orientation !== lastOrientation) {
+                // Tvingar Chart.js att rita om sig själv korrekt
+                if (window.chartInstance) {
+                    window.chartInstance.resize();
+                } else {
+                    // Om diagrammet inte har laddats ännu, tvinga en omladdning av sidan
+                    // Detta är mer robust i vissa mobila miljöer
+                    window.location.reload();
+                }
+            }
+            lastOrientation = window.orientation;
+        }
+
+        // Lyssna på orienteringsändringar (fungerar bäst på iOS/äldre Android)
+        window.addEventListener('orientationchange', handleOrientationChange);
+        
+        // Lyssna på resize (fungerar bra på moderna mobiler/tabletter)
+        window.addEventListener('resize', handleOrientationChange);
+
+    </script>
 </body>
 </html>
