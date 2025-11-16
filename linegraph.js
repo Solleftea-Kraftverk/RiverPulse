@@ -29,7 +29,8 @@ function showToastMessage(message, duration = 3000) {
 
     toast.textContent = message;
     toast.style.display = 'block';
-    // Sätt opacity till 1 för att tona in
+    
+    // Tona in meddelandet
     setTimeout(() => {
         toast.style.opacity = '1';
     }, 10);
@@ -112,13 +113,19 @@ async function fetchData() {
         riverData = data
             .map(item => {
                 const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
-                item.timestamp = Date.parse(dateStr);
+                
+                // MOBIL FIX: Använd Date.parse() först och validera resultatet.
+                // Detta är säkrare än att lita på new Date(dateStr) på Android/Chrome.
+                const parsedTimestamp = Date.parse(dateStr); 
+                item.timestamp = isNaN(parsedTimestamp) ? null : parsedTimestamp; 
+
                 item.water_level = parseFloat(item.water_level);
                 item.flow = parseFloat(item.flow);
                 return item;
             })
+            // Filtrera data. Nu kontrollerar vi mot 'null' för att fånga misslyckad parsning
             .filter(item => 
-                !isNaN(item.timestamp) && 
+                item.timestamp !== null && 
                 item.timestamp >= MIN_TIMESTAMP &&
                 !isNaN(item.water_level) &&
                 !isNaN(item.flow)
@@ -186,9 +193,8 @@ function applyFilter(filter) {
     
     const finalStartTime = Math.max(startTime, MIN_TIMESTAMP);
 
-    // NY LOGIK: Visa meddelande om filtret är "year" och datan begränsades av MIN_TIMESTAMP
+    // Logik: Visa meddelande om filtret är "year" och datan begränsades av MIN_TIMESTAMP
     if (filter === 'year' && finalStartTime === MIN_TIMESTAMP) {
-        // Formaterar datumet för att matcha din fotnot
         showToastMessage(`OBS: Data visas endast fr.o.m. ${new Date(MIN_TIMESTAMP).toLocaleDateString('sv-SE')}`);
     }
 
