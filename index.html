@@ -22,6 +22,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
+            /* Använder dvh för mer stabil höjd på mobiler */
             height: 100dvh; 
             margin: 0;
             padding: 0;
@@ -213,30 +214,36 @@
 
         loadActiveFilter();
 
-        // Lyssna på filterändringar och spara
+        // Lyssna på filterändringar, spara och anropa applyFilter från linegraph.js
         document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
             radio.addEventListener('change', saveActiveFilter);
-            // Anropa applyFilter direkt från linegraph.js (via globalt scope)
+            // VIKTIG JUSTERING: Vi behåller anropet till applyFilter via window,
+            // men säkerställer att fetchData alltid anropas vid rotation.
             radio.addEventListener('change', (event) => window.applyFilter(event.target.value)); 
         });
+
+
+        let resizeTimeout;
 
         // Hanterar robust omladdning vid rotation (Tvingar ny instans av Chart.js)
         function handleResize() {
             saveActiveFilter(); 
             
-            clearTimeout(window.resizeTimeout);
-            window.resizeTimeout = setTimeout(() => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
                 // FÖRSTÖR diagrammet och Tvinga omladdning
                 if (window.chartInstance) {
                     window.chartInstance.destroy();
-                    window.chartInstance = null;
+                    // VIKTIGT: Nollställ referensen
+                    window.chartInstance = null; 
                 }
                 
                 // Anropa fetchData som nu är globalt exponerad från linegraph.js
+                // Detta återskapar diagrammet baserat på de nya dimensionerna
                 if (window.fetchData) {
                     window.fetchData();
                 }
-            }, 250); 
+            }, 250); // 250ms delay för maximal stabilitet
         }
 
         window.addEventListener('resize', handleResize);
