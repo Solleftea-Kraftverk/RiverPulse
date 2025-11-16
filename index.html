@@ -22,6 +22,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
+            /* Använder dvh för mer stabil höjd på mobiler */
             height: 100dvh; 
             margin: 0;
             padding: 0;
@@ -91,6 +92,7 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
+        /* CSS för fotnot och toast-meddelande */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -113,13 +115,14 @@
             font-weight: 400;
         }
 
+        /* NY STIL: Toast-meddelande */
         #toast-message {
             display: none; 
             position: fixed; 
             top: 10px; 
             left: 50%; 
             transform: translateX(-50%); 
-            background-color: var(--secondary-color); 
+            background-color: var(--secondary-color); /* Orange */
             color: var(--bg-color); 
             padding: 10px 20px; 
             border-radius: 5px; 
@@ -188,6 +191,7 @@
             }, 4000); 
         };
 
+        // --- Filter Persistence Logic ---
         function getActiveFilter() {
             const active = document.querySelector('input[name="time-filter"]:checked');
             return active ? active.value : 'day';
@@ -213,23 +217,27 @@
             radio.addEventListener('change', saveActiveFilter);
         });
 
-        // Hanterar robust omladdning vid rotation (Tvingar ny instans av Chart.js)
+        // 3. FIX: Hanterar robust omladdning vid rotation (Tvingar ny instans av Chart.js)
         function handleResize() {
+            // Säkerställer att det aktiva filtervalet är sparat
             saveActiveFilter(); 
             
+            // Använder debouncing för att vänta på att layouten ska stabiliseras
             clearTimeout(window.resizeTimeout);
             window.resizeTimeout = setTimeout(() => {
                 if (window.chartInstance) {
                     // 1. Förstör den gamla Chart.js-instansen
+                    // Detta är den viktigaste fixen för att undvika krasch vid rotation
                     window.chartInstance.destroy();
                     window.chartInstance = null;
                 }
                 
                 // 2. Tvinga Chart.js att rita om sig genom att kalla fetchData() igen.
+                // fetchData() skapar en ny instans baserat på det sparade filtervalet.
                 if (window.fetchData) {
                     window.fetchData();
                 }
-            }, 250); // 250ms fördröjning
+            }, 250); // 250ms delay för maximal stabilitet
         }
 
         window.addEventListener('resize', handleResize);

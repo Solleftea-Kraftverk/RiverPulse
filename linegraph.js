@@ -2,11 +2,12 @@
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
 let chartInstance = null;
-// FIX: Gör chartInstance globalt tillgänglig för extern JS
+// Gör chartInstance globalt tillgänglig för extern JS
 window.chartInstance = chartInstance; 
 
 // NY KONSTANT: För toast-meddelandet
 const MIN_DATE_STRING = '2025-11-08'; 
+// Definierar den tidigaste tillåtna datan: 2025-11-08 i millisekunder
 const MIN_TIMESTAMP = Date.parse(`${MIN_DATE_STRING}T00:00:00`); 
 
 // FIX: Konstanter för CSS fallbacks
@@ -22,6 +23,7 @@ const CSS_FALLBACKS = {
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
+    // Returnerar CSS-variabeln eller en fallback om den saknas
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
@@ -32,6 +34,7 @@ const latestValueLabelPlugin = {
     latestFlow: null,
 
     afterDraw: (chart) => {
+        // Hämta hela canvasen och axlarna
         const { ctx, scales: { 'water-level': y1, 'flow-rate': y2 } } = chart;
         ctx.save();
         
@@ -49,6 +52,7 @@ const latestValueLabelPlugin = {
         ctx.textAlign = 'right'; 
         ctx.textBaseline = 'middle'; 
 
+        // Ritar ut Nivå-värdet (Cyan)
         if (latestValueLabelPlugin.latestWaterLevel !== null && y1.ticks.length > 0) {
             const latestY = y1.getPixelForValue(latestValueLabelPlugin.latestWaterLevel);
             
@@ -61,6 +65,7 @@ const latestValueLabelPlugin = {
             );
         }
 
+        // Ritar ut Flöde-värdet (Orange)
         if (latestValueLabelPlugin.latestFlow !== null && y2.ticks.length > 0) {
             const latestY = y2.getPixelForValue(latestValueLabelPlugin.latestFlow);
             
@@ -80,8 +85,10 @@ const latestValueLabelPlugin = {
 // Funktion för att hitta den förvalda radio-knappen (för filterpersistens)
 function getInitialFilter() {
     const checkedRadio = document.querySelector('input[name="time-filter"]:checked');
+    // Använder 'day' som standard om inget är markerat (vilket ska vara fixat av loadActiveFilter)
     return checkedRadio ? checkedRadio.value : 'day'; 
 }
+
 
 // Async function to fetch data from backend (med robust felhantering)
 async function fetchData() {
@@ -111,6 +118,7 @@ async function fetchData() {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
+        // START: Använd det filter som är markerat i DOM:en (hanterar persistens)
         const initialFilter = getInitialFilter();
         applyFilter(initialFilter); 
         setupFilterListeners();
@@ -143,6 +151,7 @@ function applyFilter(filter) {
         return;
     }
 
+    // NY FUNKTION: Visa toast-meddelande för 'year' filter
     if (filter === 'year' && window.showToast) {
         window.showToast(`Inga data före ${MIN_DATE_STRING}.`);
     }
@@ -189,6 +198,7 @@ function applyFilter(filter) {
     if (chartInstance) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
+        // Skapa diagrammet om det inte finns (detta händer efter varje rotation nu)
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
     }
 }
@@ -296,6 +306,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                 }
             },
             scales: {
+                // X-AXEL (Tidpunkt)
                 x: {
                     type: 'time',
                     time: {
@@ -322,6 +333,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                          drawBorder: false
                     }
                 },
+                // Y-AXEL 1 (Nivå)
                 'water-level': { 
                     type: 'linear',
                     position: 'left',
@@ -338,6 +350,8 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                          drawBorder: false
                     }
                 },
+                
+                // Y-AXEL 2 (Flöde)
                 'flow-rate': { 
                     type: 'linear',
                     position: 'right', 
@@ -366,5 +380,5 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
 // Starta hämtning av data
 fetchData();
 
-// NYTT TILLÄGG: Gör fetchData globalt tillgänglig för att kunna återskapa diagrammet efter rotation
+// FIX: Gör fetchData globalt tillgänglig för att kunna återskapa diagrammet efter rotation
 window.fetchData = fetchData;
