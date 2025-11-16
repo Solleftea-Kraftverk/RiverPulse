@@ -19,7 +19,7 @@ function getCssVariable(name) {
     }[name] || ''; 
 }
 
-// FIX: Plugin för att visa de senaste värdena utan att överlappa.
+// FIX: Plugin för att visa de senaste värdena.
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -37,11 +37,12 @@ const latestValueLabelPlugin = {
              return;
         }
 
-        // xPos sätts till den yttre högra kanten av Y-axelns labels + 5px padding.
-        const xPos = y2.right + 5; 
+        // FIX: Ändrat position och justering för att garantera synlighet.
+        // xPos sätts till 15px in från den yttre högra kanten av Y-axeln.
+        const xPos = y2.right - 15; 
 
         ctx.font = '700 13px var(--font-stack)';
-        ctx.textAlign = 'left'; 
+        ctx.textAlign = 'right'; // FIX 1: Högerjustera texten.
         ctx.textBaseline = 'middle'; 
 
         // Ritar ut Nivå-värdet (Cyan)
@@ -88,17 +89,14 @@ async function fetchData() {
         
         riverData = data
             .map(item => {
-                // Lägg till timestamp i varje objekt för enkel filtrering och sortering
                 const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
                 item.timestamp = Date.parse(dateStr); 
                 return item;
             })
-            // Filtrerar bort ogiltiga datum OCH data FÖRE MIN_TIMESTAMP
             .filter(item => !isNaN(item.timestamp) && item.timestamp >= MIN_TIMESTAMP);
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // Skickar med det nuvarande filtret för initial rendering
         applyFilter('day'); 
         setupFilterListeners();
 
@@ -110,7 +108,6 @@ async function fetchData() {
 
 // Funktion för att sätta upp händelselyssnare för radio-knapparna
 function setupFilterListeners() {
-    // Kollar om filterelementen existerar (beroende på om index.html är komplett)
     const filters = document.querySelectorAll('input[name="time-filter"]');
     if (filters.length > 0) {
         filters.forEach(filter => {
@@ -118,8 +115,6 @@ function setupFilterListeners() {
                 applyFilter(event.target.value);
             });
         });
-    } else {
-         // Ingen action, kör bara initial applyFilter('day')
     }
 }
 
@@ -161,7 +156,6 @@ function applyFilter(filter) {
     const latestWaterLevel = waterLevels.length > 0 ? waterLevels[waterLevels.length - 1] : null;
     const latestFlow = flowValues.length > 0 ? flowValues[flowValues.length - 1] : null;
 
-    // FIX: Bestäm pointRadius och tension baserat på filtret
     let pointRadius = 2; 
     let tension = 0.4;   
 
@@ -173,7 +167,6 @@ function applyFilter(filter) {
     if (chartInstance) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
-        // Skicka initialFilter 'day' som standard om filter inte har valts
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
     }
 }
