@@ -8,15 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     
     <style>
-        /* CSS baserad på en Dark/High-Contrast palett för bästa läsbarhet */
+        /* CSS baserad på en Dark/High-Contrast palett */
         :root {
-            /* Högkontrast palett */
-            --bg-color: #1a1a2e; /* Deep Navy/Indigo */
-            --card-bg: #1f2038; /* Lättare bakgrund för kort/diagram */
-            --primary-color: #00b4d8; /* Klar Cyan/Sky Blue (Nivå) */
-            --secondary-color: #ff7f50; /* Klar Orange/Korall (Flöde) */
-            --text-color-light: #f0f0f0; /* Off-white */
-            --text-color-dark: #a9a9b3; /* Mjuk grå för axlar/detaljer */
+            --bg-color: #1a1a2e; 
+            --card-bg: #1f2038; 
+            --primary-color: #00b4d8; 
+            --secondary-color: #ff7f50; 
+            --text-color-light: #f0f0f0; 
+            --text-color-dark: #a9a9b3; 
             --font-stack: 'Roboto Mono', monospace; 
         }
 
@@ -29,26 +28,28 @@
             font-family: var(--font-stack);
             background-color: var(--bg-color);
             color: var(--text-color-light);
-            /* Förhindrar scrollning i helskärmsläge på PC */
-            overflow: hidden; 
+            /* VIKTIGT: Tillåter scrollning om innehållet blir för högt (mobil) */
+            overflow-x: hidden; 
         }
 
         .container {
-            /* Utnyttjar 100% av viewportens bredd och höjd */
             width: 100vw;
-            height: 100vh;
+            /* Nu använder vi MINST 100vh, men tillåter innehåll att flöda (scrolla) */
+            min-height: 100vh;
             padding: 15px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* VIKTIGT: Lägg till utrymme i botten för den fasta footern */
+            padding-bottom: 50px; 
         }
 
         h1 {
             text-align: center;
             color: var(--primary-color);
             margin: 5px 0 10px 0; 
-            font-size: 1.6em; /* Något större för RiverPulse */
+            font-size: 1.6em; 
             font-weight: 700;
             text-transform: uppercase;
         }
@@ -56,13 +57,14 @@
         /* Responsivitet för diagrammets behållare */
         #chart-container {
             position: relative;
-            flex-grow: 1; /* Tar upp all ledig höjd */
-            width: 100%; /* Tar upp hela bredden */
+            flex-grow: 1; 
+            width: 100%; 
+            max-width: 100%; 
             margin-bottom: 10px;
             background: var(--card-bg);
             border-radius: 8px;
             padding: 15px;
-            box-shadow: 0 0 15px rgba(0, 180, 216, 0.15); /* Subtil glöd */
+            box-shadow: 0 0 15px rgba(0, 180, 216, 0.15); 
             min-height: 200px; 
         }
         
@@ -72,13 +74,13 @@
             justify-content: center;
             gap: 12px;
             margin-bottom: 15px;
-            flex-wrap: wrap; /* Säkerställer att de radbryts på mobil */
+            flex-wrap: wrap; 
         }
         
         .filter-controls label {
             background-color: var(--card-bg);
             padding: 8px 14px;
-            border-radius: 20px; /* Rundare knappar */
+            border-radius: 20px; 
             cursor: pointer;
             transition: background-color 0.2s;
             font-weight: 400;
@@ -93,19 +95,22 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
 
-        /* Fotnot & Kontaktinformation (Förbättrad mobil synlighet) */
+        /* FIX: Använder fast positionering för att tvinga fram synlighet */
         .contact-info {
+            position: fixed; /* Hålls fast vid viewporten */
+            bottom: 0; /* Placeras i botten */
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            
             font-size: 0.8em;
             color: var(--text-color-dark);
             display: flex;
             justify-content: space-between;
-            width: 100%;
-            padding: 5px 0;
-            /* Säkerställer synlighet på mobil genom bättre färg/positionering */
-        }
-
-        .contact-info span:first-child {
-            color: var(--text-color-dark); /* Gör datuminformationen diskret men läsbar */
+            padding: 10px 20px;
+            background: rgba(26, 26, 46, 0.9); /* Halvtransparent bakgrund för att synas över allt */
+            z-index: 1000; /* Säkerställer att den ligger över annat innehåll */
+            border-top: 1px solid rgba(0, 180, 216, 0.1);
         }
 
         .contact-info a {
@@ -114,17 +119,16 @@
             font-weight: 400;
         }
         
-        /* Mediafråga för att öka läsbarheten på mycket små skärmar */
+        /* Mediafråga för att hantera små skärmar och stapla texten */
         @media (max-width: 600px) {
             .contact-info {
                 flex-direction: column;
                 align-items: center;
                 gap: 5px;
                 font-size: 0.75em;
-                margin-top: 10px;
+                padding: 8px 10px;
             }
         }
-
     </style>
 </head>
 <body>
@@ -149,10 +153,11 @@
             <canvas id="myChart"></canvas>
         </div>
 
-        <div class="contact-info">
-            <span>Data fr.o.m. 2025-11-08</span>
-            <span>Återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a></span>
         </div>
+
+    <div class="contact-info">
+        <span>Data fr.o.m. 2025-11-08</span>
+        <span>Återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a></span>
     </div>
 
     <script src="linegraph.js"></script>
