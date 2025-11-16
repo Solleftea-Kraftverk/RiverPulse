@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     
     <style>
-        /* ... Din CSS här ... */
+        /* CSS baserad på en Dark/High-Contrast palett */
         :root {
             --bg-color: #1a1a2e; 
             --card-bg: #1f2038; 
@@ -179,5 +179,67 @@
     </div>
 
     <script src="linegraph.js" defer></script>
+    
+    <script>
+        // Gör showToast globalt tillgänglig för linegraph.js
+        window.showToast = function(message) {
+            const toast = document.getElementById('toast-message');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000); 
+        };
+
+        // --- Filter Persistence Logic ---
+        function getActiveFilter() {
+            const active = document.querySelector('input[name="time-filter"]:checked');
+            return active ? active.value : 'day';
+        }
+
+        function saveActiveFilter() {
+            sessionStorage.setItem('activeFilter', getActiveFilter());
+        }
+
+        function loadActiveFilter() {
+            const savedFilter = sessionStorage.getItem('activeFilter');
+            const filterToLoad = savedFilter || 'day'; 
+            
+            const radio = document.getElementById(`filter-${filterToLoad}`);
+            if (radio) {
+                radio.checked = true;
+            }
+        }
+
+        loadActiveFilter();
+
+        // Lyssna på filterändringar och spara
+        document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
+            radio.addEventListener('change', saveActiveFilter);
+            // Anropa applyFilter direkt från linegraph.js (via globalt scope)
+            radio.addEventListener('change', (event) => window.applyFilter(event.target.value)); 
+        });
+
+        // Hanterar robust omladdning vid rotation (Tvingar ny instans av Chart.js)
+        function handleResize() {
+            saveActiveFilter(); 
+            
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(() => {
+                // FÖRSTÖR diagrammet och Tvinga omladdning
+                if (window.chartInstance) {
+                    window.chartInstance.destroy();
+                    window.chartInstance = null;
+                }
+                
+                // Anropa fetchData som nu är globalt exponerad från linegraph.js
+                if (window.fetchData) {
+                    window.fetchData();
+                }
+            }, 250); 
+        }
+
+        window.addEventListener('resize', handleResize);
+    </script>
 </body>
 </html>

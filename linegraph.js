@@ -1,8 +1,8 @@
 // Global variabel för att lagra all hämtad data
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
-let chartInstance = null;
-window.chartInstance = chartInstance; // Gör den global för att hantera destroy
+let chartInstance = null; 
+window.chartInstance = chartInstance; // FIX: Gör chartInstance globalt tillgänglig.
 
 // Konstanter
 const MIN_DATE_STRING = '2025-11-08'; 
@@ -16,74 +16,14 @@ const CSS_FALLBACKS = {
     '--card-bg': '#1f2038'
 };
 
-// --- HJÄLPFUNKTIONER (Från index.html) ---
-
-// Global funktion för att visa det tillfälliga meddelandet
-window.showToast = function(message) {
-    const toast = document.getElementById('toast-message');
-    toast.textContent = message;
-    toast.style.display = 'block';
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 4000); 
-};
-
+// Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
+    // Returnerar CSS-variabeln eller en fallback om den saknas
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-function getActiveFilter() {
-    const active = document.querySelector('input[name="time-filter"]:checked');
-    return active ? active.value : 'day';
-}
-
-function saveActiveFilter() {
-    sessionStorage.setItem('activeFilter', getActiveFilter());
-}
-
-function loadActiveFilter() {
-    const savedFilter = sessionStorage.getItem('activeFilter');
-    const filterToLoad = savedFilter || 'day'; 
-    
-    const radio = document.getElementById(`filter-${filterToLoad}`);
-    if (radio) {
-        radio.checked = true;
-    }
-}
-
-// --- ROTATION FIX LOGIK (Från index.html) ---
-function handleResize() {
-    saveActiveFilter(); 
-    
-    clearTimeout(window.resizeTimeout);
-    window.resizeTimeout = setTimeout(() => {
-        if (window.chartInstance) {
-            window.chartInstance.destroy();
-            window.chartInstance = null;
-        }
-        // Kallar fetchData för att återskapa diagrammet
-        fetchData();
-    }, 250); // 250ms delay för maximal stabilitet
-}
-
-function setupWindowListeners() {
-    // 1. Återställ filtervalet från lagring
-    loadActiveFilter();
-
-    // 2. Lyssna på filterändringar för att spara det nya valet
-    document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
-        radio.addEventListener('change', saveActiveFilter);
-        radio.addEventListener('change', (event) => applyFilter(event.target.value));
-    });
-    
-    // 3. Lyssna på storleksändring (rotation)
-    window.addEventListener('resize', handleResize);
-}
-
-
-// --- CHART.JS LOGIK ---
-
+// FIX: Plugin för att visa de senaste värdena.
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -135,8 +75,15 @@ const latestValueLabelPlugin = {
     }
 };
 
+// Funktion för att hitta den förvalda radio-knappen (för filterpersistens)
+function getInitialFilter() {
+    // VIKTIGT: Hämta det nuvarande aktiva filtret från DOM:en
+    const checkedRadio = document.querySelector('input[name="time-filter"]:checked');
+    return checkedRadio ? checkedRadio.value : 'day'; 
+}
 
-// Funktion för att hämta data (Görs globalt tillgänglig)
+
+// Async function to fetch data from backend (med robust felhantering)
 async function fetchData() {
     try {
         const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
@@ -164,18 +111,14 @@ async function fetchData() {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // KÖR ALLTID setupWindowListeners EFTER FÖRSTA LYCKADE HÄMTNINGEN
-        if (!window.listenersSetup) {
-            setupWindowListeners();
-            window.listenersSetup = true;
-        }
-        
-        // APPLICERA FILTER BASERAT PÅ VAD SOM ÄR MARKERAT (kan vara det sparade valet)
-        applyFilter(getActiveFilter()); 
+        // Använd det filter som är aktivt i DOM:en
+        const initialFilter = getInitialFilter(); 
+        applyFilter(initialFilter); 
+        // setupFilterListeners() KÖRS NU I index.html
 
     } catch (error) {
         console.error("Fel vid datahämtning eller bearbetning:", error.message);
-        // Visa alert ENBART om det inte finns någon chart-instans (dvs. vid initialt fel)
+        // Visa alert ENBART om det inte finns någon chart-instans
         if (!window.chartInstance) { 
              alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
         }
@@ -235,6 +178,7 @@ function applyFilter(filter) {
     if (chartInstance) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
+        // Detta anropas vid första laddningen och efter varje rotation!
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
     }
 }
@@ -405,10 +349,10 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
         plugins: [latestValueLabelPlugin]
     });
 
-    window.chartInstance = newChartInstance;
+    window.chartInstance = newChartInstance; // FIX: Uppdatera den globala referensen
     return newChartInstance;
 }
 
 // Starta hämtning av data
-window.fetchData = fetchData; // Exponera fetchData globalt
+window.fetchData = fetchData; // FIX: Gör fetchData globalt tillgänglig för index.html
 fetchData();
