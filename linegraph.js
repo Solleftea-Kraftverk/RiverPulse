@@ -23,7 +23,7 @@ function getCssVariable(name) {
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-// Plugin för att visa de senaste värdena. (Oförändrad)
+// Plugin för att visa de senaste värdena. 
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -104,7 +104,6 @@ async function fetchData() {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // Tillämpa filter, men sätt INTE upp lyssnare här
         applyFilter(getActiveFilter()); 
 
     } catch (error) {
@@ -120,24 +119,32 @@ function getActiveFilter() {
 }
 
 
-// NY FIX: Funktion för att sätta upp händelselyssnare (anropas via DOMContentLoaded)
+// FIX: Funktion för att sätta upp händelselyssnare
 function setupFilterListeners() {
     // Förhindra dubbla instanser
     if (listenersSetup) return; 
 
     const filters = document.querySelectorAll('input[name="time-filter"]');
-    if (filters.length > 0) {
-        filters.forEach(filter => {
+    
+    // DEBUG/SÄKERHETSKONTROLL: Kontrollera om elementen faktiskt hittas
+    if (filters.length === 0) {
+        console.error("KRITISKT FEL: Inga filterknappar hittades med name='time-filter'. Kontrollera index.html.");
+        return; 
+    }
+
+    filters.forEach(filter => {
+        // Kontrollera typ och värde för maximal säkerhet
+        if (filter.type === 'radio' && filter.value) {
             filter.addEventListener('change', (event) => {
                 applyFilter(event.target.value);
             });
-        });
-    }
+        }
+    });
     listenersSetup = true;
 }
 
 
-// Funktion för att filtrera data och uppdatera diagrammet (Oförändrad)
+// Funktion för att filtrera data och uppdatera diagrammet 
 function applyFilter(filter) {
     if (riverData.length === 0) {
         if (chartInstance) chartInstance.update();
@@ -190,7 +197,7 @@ function applyFilter(filter) {
     }
 }
 
-// Funktion för att uppdatera diagrammets data och axelkonfiguration (Använder .resize())
+// Funktion för att uppdatera diagrammets data och axelkonfiguration 
 function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension) {
     chartInstance.data.labels = timestamps;
     chartInstance.data.datasets[0].data = waterLevels;
@@ -216,12 +223,11 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
     
     chartInstance.options.scales.x.time.unit = unit;
     
-    // Använder resize() för att tvinga fram en säker omdragning av Chart.js (stabilare än update())
     chartInstance.resize();
 }
 
 
-// Funktion för att skapa diagrammet (Oförändrad)
+// Funktion för att skapa diagrammet 
 function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRadius, tension) {
     const ctx = document.getElementById('myChart').getContext('2d');
     
