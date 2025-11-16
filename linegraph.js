@@ -7,7 +7,6 @@ const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00');
 
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
-    // Hämta värdet och trimma bort eventuella mellanslag
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
@@ -159,11 +158,11 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 ctx.textAlign = 'left';
                 ctx.fillStyle = primaryColor;
                 
-                // Positionering lite till höger om sista punkten
+                // FIX: Ökad X-förskjutning (från 8 till 15) och Y-förskjutning för Nivå
                 ctx.fillText(
                     latestWaterLevel.toFixed(2) + ' m', 
-                    xPos + 8, 
-                    latestY - 5 
+                    xPos + 15, // Ökat avstånd
+                    latestY - 10 // Mer vertikal marginal
                 );
             }
 
@@ -175,10 +174,11 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 ctx.textAlign = 'left';
                 ctx.fillStyle = secondaryColor;
                 
+                // FIX: Ökad X-förskjutning (från 8 till 15) och Y-förskjutning för Flöde
                 ctx.fillText(
                     latestFlow.toFixed(2) + ' m³/s', 
-                    xPos + 8, 
-                    latestY + 15 
+                    xPos + 15, // Ökat avstånd
+                    latestY + 20 // Mer vertikal marginal
                 );
             }
 
@@ -200,10 +200,10 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
             datasets: [{
                 label: 'Nivå (m)', 
                 data: waterLevels,
-                borderColor: primaryColor, // Distinkt färg 1
+                borderColor: primaryColor, 
                 backgroundColor: 'rgba(0, 180, 216, 0.1)',
-                fill: 'origin', // Använder färgfyllning under linjen
-                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, // Större sista punkt
+                fill: 'origin', 
+                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, 
                 pointBackgroundColor: primaryColor,
                 pointHoverRadius: 9,
                 borderWidth: 3, 
@@ -212,9 +212,9 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
             {
                 label: 'Flöde (m³/s)', 
                 data: flowValues,
-                borderColor: secondaryColor, // Distinkt färg 2
+                borderColor: secondaryColor, 
                 backgroundColor: 'rgba(255, 127, 80, 0.1)',
-                fill: false, // Ingen fyllning för att undvika överlappning
+                fill: false, 
                 pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, 
                 pointBackgroundColor: secondaryColor,
                 pointHoverRadius: 9,
@@ -304,7 +304,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                         color: secondaryColor
                     },
                     grid: { 
-                        drawOnChartArea: false, // Inget rutnät i diagrammet för denna axel
+                        drawOnChartArea: false, 
                         drawBorder: false
                     } 
                 }
