@@ -2,12 +2,14 @@
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
 let chartInstance = null;
-// FIX: Gör chartInstance globalt tillgänglig för extern JS (t.ex. i index.html för rotation)
+// FIX: Gör chartInstance globalt tillgänglig för extern JS
 window.chartInstance = chartInstance; 
-// Definierar den tidigaste tillåtna datan: 2025-11-08 i millisekunder
-const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00'); 
 
-// FIX: Konstanter för CSS fallbacks (för ökad prestanda och renare kod)
+// NY KONSTANT: För toast-meddelandet
+const MIN_DATE_STRING = '2025-11-08'; 
+const MIN_TIMESTAMP = Date.parse(`${MIN_DATE_STRING}T00:00:00`); 
+
+// FIX: Konstanter för CSS fallbacks
 const CSS_FALLBACKS = {
     '--primary-color': '#00b4d8', 
     '--secondary-color': '#ff7f50', 
@@ -20,7 +22,6 @@ const CSS_FALLBACKS = {
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
-    // Använder CSS_FALLBACKS för en robust fallback
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
@@ -43,17 +44,14 @@ const latestValueLabelPlugin = {
              return;
         }
 
-        // FIX: Använder chart.width (hela canvasbredden) minus en liten marginal (10px). 
-        // Detta garanterar att texten är i det absolut synliga området.
         const xPos = chart.width - 10; 
 
         ctx.font = '700 13px var(--font-stack)';
-        ctx.textAlign = 'right'; // FIX: Högerjustera texten så den sitter fast i högerkanten.
+        ctx.textAlign = 'right'; 
         ctx.textBaseline = 'middle'; 
 
         // Ritar ut Nivå-värdet (Cyan)
         if (latestValueLabelPlugin.latestWaterLevel !== null && y1.ticks.length > 0) {
-            // Vi använder Nivå-axeln för att få den korrekta vertikala positionen
             const latestY = y1.getPixelForValue(latestValueLabelPlugin.latestWaterLevel);
             
             ctx.fillStyle = primaryColor;
@@ -67,7 +65,6 @@ const latestValueLabelPlugin = {
 
         // Ritar ut Flöde-värdet (Orange)
         if (latestValueLabelPlugin.latestFlow !== null && y2.ticks.length > 0) {
-            // Vi använder Flöde-axeln för att få den korrekta vertikala positionen
             const latestY = y2.getPixelForValue(latestValueLabelPlugin.latestFlow);
             
             ctx.fillStyle = secondaryColor;
@@ -83,6 +80,12 @@ const latestValueLabelPlugin = {
     }
 };
 
+// Funktion för att hitta den förvalda radio-knappen (för filterpersistens)
+function getInitialFilter() {
+    const checkedRadio = document.querySelector('input[name="time-filter"]:checked');
+    // Återgår till 'day' om inget är markerat (vilket det bör vara via loadActiveFilter i index.html)
+    return checkedRadio ? checkedRadio.value : 'day'; 
+}
 
 // Async function to fetch data from backend (med robust felhantering)
 async function fetchData() {
@@ -99,7 +102,6 @@ async function fetchData() {
             .map(item => {
                 const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
                 item.timestamp = Date.parse(dateStr); 
-                // FIX: Konvertera till float tidigt
                 item.water_level = parseFloat(item.water_level);
                 item.flow = parseFloat(item.flow);
                 return item;
@@ -107,14 +109,15 @@ async function fetchData() {
             .filter(item => 
                 !isNaN(item.timestamp) && 
                 item.timestamp >= MIN_TIMESTAMP &&
-                // NY ROBUSTHETSKONTROLL: Säkerställ att nivå och flöde är faktiska siffror
                 !isNaN(item.water_level) &&
                 !isNaN(item.flow)
             );
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        applyFilter('day'); 
+        // START: Använd det filter som är markerat i DOM:en (hanterar persistens)
+        const initialFilter = getInitialFilter();
+        applyFilter(initialFilter); 
         setupFilterListeners();
 
     } catch (error) {
@@ -140,6 +143,11 @@ function applyFilter(filter) {
     if (riverData.length === 0) {
         if (chartInstance) chartInstance.update();
         return;
+    }
+
+    // NY FUNKTION: Visa toast-meddelande vid val av 'Året'
+    if (filter === 'year' && window.showToast) {
+        window.showToast(`Inga data före ${MIN_DATE_STRING}.`);
     }
 
     let startTime = 0;
@@ -185,7 +193,6 @@ function applyFilter(filter) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
-        // FIX: Se till att den globala fönsterinstansen uppdateras efter skapandet
         window.chartInstance = chartInstance;
     }
 }

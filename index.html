@@ -22,7 +22,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
-            /* FIX: Använd 100vh för att maximera utrymmet, viktigt för mobila webbläsare */
             height: 100dvh; 
             margin: 0;
             padding: 0;
@@ -34,7 +33,6 @@
 
         .container {
             width: 100vw;
-            /* FIX: Använd 100% av viewportens dynamiska höjd */
             min-height: 100dvh; 
             padding: 15px; 
             box-sizing: border-box;
@@ -56,7 +54,6 @@
         
         #chart-container {
             position: relative;
-            /* FIX: Låter diagrammet ta upp all vertikal yta */
             flex-grow: 1; 
             width: 100%; 
             margin-bottom: 10px;
@@ -70,21 +67,21 @@
         .filter-controls {
             display: flex;
             justify-content: center;
-            gap: 10px; /* Minskad gap för tightare mobilvy */
+            gap: 10px; 
             margin-bottom: 15px;
             flex-wrap: wrap; 
         }
         
         .filter-controls label {
             background-color: var(--card-bg);
-            padding: 8px 12px; /* Minskad padding för tightare mobilvy */
+            padding: 8px 12px; 
             border-radius: 20px; 
             cursor: pointer;
             transition: background-color 0.2s;
             font-weight: 400;
             font-size: 0.9em;
             border: 1px solid var(--text-color-dark);
-            white-space: nowrap; /* Förhindra radbrytning */
+            white-space: nowrap;
         }
         
         .filter-controls input[type="radio"]:checked + label {
@@ -94,6 +91,7 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
+        /* CSS för fotnot och toast-meddelande */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -115,6 +113,23 @@
             text-decoration: none;
             font-weight: 400;
         }
+
+        /* NY STIL: Toast-meddelande */
+        #toast-message {
+            display: none; 
+            position: fixed; 
+            top: 10px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background-color: var(--secondary-color); /* Orange */
+            color: var(--bg-color); 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            z-index: 2000; 
+            font-size: 0.9em; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            font-weight: 700;
+        }
         
         @media (max-width: 600px) {
             .contact-info {
@@ -124,7 +139,6 @@
                 font-size: 0.75em;
                 padding: 8px 10px;
             }
-            /* Extra justering för små skärmar (t.ex. äldre mobiler) */
              .filter-controls label {
                 font-size: 0.8em;
                 padding: 6px 10px;
@@ -133,8 +147,10 @@
     </style>
 </head>
 <body>
+    <div id="toast-message" aria-live="assertive"></div>
+
     <div class="container">
-        <h1>💧 RiverPulse: Nivå och Flöde över Tid</h1>
+        <h1>💧 RiverPulse: Nivå/Flöde över Tid</h1>
 
         <div class="filter-controls">
             <input type="radio" id="filter-day" name="time-filter" value="day" checked>
@@ -165,35 +181,63 @@
     <script src="linegraph.js" defer></script>
     
     <script>
-        // Håller reda på den senaste orienteringen
-        let lastOrientation = window.orientation;
+        // Global funktion för att visa det tillfälliga meddelandet
+        window.showToast = function(message) {
+            const toast = document.getElementById('toast-message');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000); // Visar i 4 sekunder
+        };
 
-        // Kontrollerar om vi är i ett mobil- eller tablettläge
-        function isMobileDevice() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // --- Filter Persistence & Orientation Logic ---
+        let lastOrientation = window.orientation;
+        
+        function getActiveFilter() {
+            const active = document.querySelector('input[name="time-filter"]:checked');
+            return active ? active.value : 'day';
         }
 
+        function saveActiveFilter() {
+            sessionStorage.setItem('activeFilter', getActiveFilter());
+        }
+
+        function loadActiveFilter() {
+            const savedFilter = sessionStorage.getItem('activeFilter');
+            // Använd 'day' som standard om inget är sparat
+            const filterToLoad = savedFilter || 'day'; 
+            
+            const radio = document.getElementById(`filter-${filterToLoad}`);
+            if (radio) {
+                radio.checked = true;
+            }
+        }
+
+        // 1. Återställ filtervalet innan linegraph.js laddas
+        loadActiveFilter();
+
+        // 2. Lyssna på filterändringar för att spara det nya valet
+        document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
+            radio.addEventListener('change', saveActiveFilter);
+        });
+
+        // 3. Hantera skärmrotation (mobil)
         function handleOrientationChange() {
-            // Kontrollera om enheten faktiskt roteras och om det är en mobil enhet
-            if (isMobileDevice() && window.orientation !== lastOrientation) {
-                // Tvingar Chart.js att rita om sig själv korrekt
+            // Spara filter innan eventuell omladdning/storleksändring
+            saveActiveFilter(); 
+            
+            if (window.orientation !== lastOrientation) {
                 if (window.chartInstance) {
+                    // Försök tvinga Chart.js att rita om sig själv
                     window.chartInstance.resize();
-                } else {
-                    // Om diagrammet inte har laddats ännu, tvinga en omladdning av sidan
-                    // Detta är mer robust i vissa mobila miljöer
-                    window.location.reload();
-                }
+                } 
             }
             lastOrientation = window.orientation;
         }
 
-        // Lyssna på orienteringsändringar (fungerar bäst på iOS/äldre Android)
         window.addEventListener('orientationchange', handleOrientationChange);
-        
-        // Lyssna på resize (fungerar bra på moderna mobiler/tabletter)
         window.addEventListener('resize', handleOrientationChange);
-
     </script>
 </body>
 </html>
