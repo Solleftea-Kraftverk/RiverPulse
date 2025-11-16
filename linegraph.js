@@ -2,11 +2,12 @@
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
 let chartInstance = null; 
-window.chartInstance = chartInstance; // FIX: Gör chartInstance globalt tillgänglig.
+window.chartInstance = chartInstance; // Gör chartInstance globalt tillgänglig.
 
 // Konstanter
 const MIN_DATE_STRING = '2025-11-08'; 
 const MIN_TIMESTAMP = Date.parse(`${MIN_DATE_STRING}T00:00:00`); 
+const MAX_RETRIES = 3; // FIX: Max antal återförsök för datahämtning
 const CSS_FALLBACKS = {
     '--primary-color': '#00b4d8', 
     '--secondary-color': '#ff7f50', 
@@ -19,11 +20,10 @@ const CSS_FALLBACKS = {
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
-    // Returnerar CSS-variabeln eller en fallback om den saknas
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-// FIX: Plugin för att visa de senaste värdena.
+// FIX: Plugin för att visa de senaste värdena. (Oförändrad)
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -75,20 +75,20 @@ const latestValueLabelPlugin = {
     }
 };
 
-// Funktion för att hitta den förvalda radio-knappen (för filterpersistens)
-function getInitialFilter() {
-    // VIKTIGT: Hämta det nuvarande aktiva filtret från DOM:en
-    const checkedRadio = document.querySelector('input[name="time-filter"]:checked');
-    return checkedRadio ? checkedRadio.value : 'day'; 
+// Funktion för att hitta det aktiva radio-valet
+function getActiveFilter() {
+    const active = document.querySelector('input[name="time-filter"]:checked');
+    return active ? active.value : 'day'; 
 }
 
 
-// Async function to fetch data from backend (med robust felhantering)
-async function fetchData() {
+// FIX: Async function to fetch data from backend (med robust felhantering och återförsök)
+async function fetchData(retryCount = 0) {
     try {
         const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
         
         if (!response.ok) {
+            // Om HTTP-status är dålig, behandla som ett fel och trigga retry
             throw new Error(`HTTP-fel! Status: ${response.status}. Kan bero på nätverksblockering.`);
         }
 
@@ -111,17 +111,23 @@ async function fetchData() {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // Använd det filter som är aktivt i DOM:en
-        const initialFilter = getInitialFilter(); 
-        applyFilter(initialFilter); 
-        // setupFilterListeners() KÖRS NU I index.html
+        // APPLICERA FILTER BASERAT PÅ VAD SOM ÄR MARKERAT
+        applyFilter(getActiveFilter()); 
 
     } catch (error) {
-        console.error("Fel vid datahämtning eller bearbetning:", error.message);
-        // Visa alert ENBART om det inte finns någon chart-instans
-        if (!window.chartInstance) { 
-             alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
+        // Logga felet och försök
+        console.error(`Fel vid datahämtning eller bearbetning (Försök ${retryCount + 1}/${MAX_RETRIES}):`, error.message);
+        
+        // FIX: Hantera återförsök
+        if (retryCount < MAX_RETRIES - 1) { 
+            // Vänta 1 sekund * (nuvarande försök nummer)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); 
+            console.log(`Försöker ladda data igen... (Försök ${retryCount + 2})`);
+            return fetchData(retryCount + 1); // Anropa rekursivt
         }
+
+        // FIX: Endast visa ett slutgiltigt alert efter ALLA försök har misslyckats
+        alert("KRITISKT FEL: Kunde inte ladda data efter flera försök. Diagrammet kan inte visas.");
     }
 }
 
@@ -178,7 +184,6 @@ function applyFilter(filter) {
     if (chartInstance) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
-        // Detta anropas vid första laddningen och efter varje rotation!
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
     }
 }
@@ -349,10 +354,12 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
         plugins: [latestValueLabelPlugin]
     });
 
-    window.chartInstance = newChartInstance; // FIX: Uppdatera den globala referensen
+    window.chartInstance = newChartInstance;
     return newChartInstance;
 }
 
 // Starta hämtning av data
-window.fetchData = fetchData; // FIX: Gör fetchData globalt tillgänglig för index.html
-fetchData();
+window.fetchData = fetchData; // Gör fetchData globalt tillgänglig
+window.applyFilter = applyFilter; // Gör applyFilter globalt tillgänglig
+
+fetchData(); // Starta initial laddning
