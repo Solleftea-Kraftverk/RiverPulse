@@ -8,15 +8,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     
     <style>
-        /* Modern, Högkontrast CSS för maximalt skärmutnyttjande */
+        /* CSS baserad på en Dark/High-Contrast palett för bästa läsbarhet */
         :root {
-            /* Solarized Dark-inspirerad palett för god läsbarhet */
-            --bg-color: #002b36; /* Dark Cyan/Blå - Huvudbakgrund */
-            --card-bg: #073642; /* Lättare bakgrund för kort/diagram */
-            --primary-color: #2aa198; /* Aqua/Turkos - Nivå-färg */
-            --secondary-color: #cb4b16; /* Orange - Flöde-färg */
-            --text-color-light: #fdf6e3; /* Nästan vit */
-            --text-color-dark: #839496; /* Lätt grå för mindre viktig text */
+            /* Färgpalett för datavisualisering */
+            --bg-color: #0d1117; /* Nästan svart, djup bakgrund (GitHub Dark) */
+            --card-bg: #161b22; /* Lättare bakgrund för kort/diagram */
+            --primary-color: #58a6ff; /* Ljusblå (Nivå) */
+            --secondary-color: #3fb950; /* Klar Grön (Flöde) */
+            --text-color-light: #f0f6f9; /* Vit/Ljusgrå */
+            --text-color-dark: #8b949e; /* Mjuk grå för axlar/mindre viktig text */
             --font-stack: 'Roboto Mono', monospace; 
         }
 
@@ -29,14 +29,13 @@
             font-family: var(--font-stack);
             background-color: var(--bg-color);
             color: var(--text-color-light);
-            overflow: hidden; /* Förhindra scrollning i helskärmsläge */
+            overflow: hidden; 
         }
 
         .container {
-            /* Utnyttjar ALLT utrymme */
             width: 100vw;
             height: 100vh;
-            padding: 10px; /* Mindre padding för att maximera utrymmet */
+            padding: 10px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
@@ -55,16 +54,15 @@
         /* Responsivitet för diagrammets behållare */
         #chart-container {
             position: relative;
-            /* Beräkna höjden dynamiskt baserat på vad som finns kvar */
             flex-grow: 1; 
-            width: 100%; /* Tar hela bredden */
-            max-width: 100%; /* Tar bort tidigare begränsning */
+            width: 100%; 
+            max-width: 100%; 
             margin-bottom: 10px;
             background: var(--card-bg);
             border-radius: 8px;
             padding: 15px;
-            box-shadow: 0 0 10px rgba(42, 161, 152, 0.5); /* Subtil turkos glöd */
-            min-height: 200px; /* Minsta höjd för mobil */
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.15); /* Subtil blå glöd */
+            min-height: 200px; 
         }
         
         /* Filterstil */
