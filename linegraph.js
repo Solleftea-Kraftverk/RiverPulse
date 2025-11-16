@@ -158,11 +158,11 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 ctx.textAlign = 'left';
                 ctx.fillStyle = primaryColor;
                 
-                // FIX: Ökad X-förskjutning (från 8 till 15) och Y-förskjutning för Nivå
+                // Använder utökad marginal för att undvika överlappning
                 ctx.fillText(
                     latestWaterLevel.toFixed(2) + ' m', 
-                    xPos + 15, // Ökat avstånd
-                    latestY - 10 // Mer vertikal marginal
+                    xPos + 15, 
+                    latestY - 10 
                 );
             }
 
@@ -174,11 +174,11 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 ctx.textAlign = 'left';
                 ctx.fillStyle = secondaryColor;
                 
-                // FIX: Ökad X-förskjutning (från 8 till 15) och Y-förskjutning för Flöde
+                // Använder utökad marginal för att undvika överlappning
                 ctx.fillText(
                     latestFlow.toFixed(2) + ' m³/s', 
-                    xPos + 15, // Ökat avstånd
-                    latestY + 20 // Mer vertikal marginal
+                    xPos + 15, 
+                    latestY + 20 
                 );
             }
 
@@ -207,7 +207,8 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 pointBackgroundColor: primaryColor,
                 pointHoverRadius: 9,
                 borderWidth: 3, 
-                yAxisID: 'water-level' 
+                yAxisID: 'water-level',
+                tension: 0.4 // FIX: Lägger till utjämning
             },
             {
                 label: 'Flöde (m³/s)', 
@@ -219,7 +220,8 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 pointBackgroundColor: secondaryColor,
                 pointHoverRadius: 9,
                 borderWidth: 3, 
-                yAxisID: 'flow-rate' 
+                yAxisID: 'flow-rate',
+                tension: 0.4 // FIX: Lägger till utjämning
             }]
         },
         options: {
