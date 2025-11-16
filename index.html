@@ -23,25 +23,24 @@
 
         html, body {
             /* FIX: Använd 100dvh för stabil höjd vid mobilt rotering */
-            height: 100dvh;
+            height: 100dvh; 
             margin: 0;
             padding: 0;
             font-family: var(--font-stack);
             background-color: var(--bg-color);
             color: var(--text-color-light);
-            /* FIX: Ta bort overflow-x: hidden; för att inte störa rotationen */
+            /* Borta: overflow-x: hidden; */
         }
 
         .container {
             width: 100vw;
             /* FIX: Använd 100dvh för stabil höjd vid mobilt rotering */
-            min-height: 100dvh;
+            min-height: 100dvh; 
             padding: 15px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* Extra utrymme för den fasta fotnoten */
             padding-bottom: 50px; 
             max-width: 1400px; 
             margin: 0 auto;
@@ -95,7 +94,7 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
-        /* Toast-meddelande (valfritt, men behålls för framtida användning) */
+        /* Toast-meddelande (nödvändigt element) */
         #toast-message {
             display: none; 
             position: fixed; 
@@ -111,7 +110,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             font-weight: 700;
         }
-
+        
         /* Fotnot CSS */
         .contact-info {
             position: fixed; 
