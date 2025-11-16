@@ -1,67 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>River Pulse</title>
+    <title>🌊 RiverPulse - Data Visualisering</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
     <style>
-        body { font-family: sans-serif; }
-        #chart-container { 
-            width: 100%; 
-            max-width: 800px; 
-            margin: 20px auto; 
+        /* CSS baserad på en Dark/High-Contrast palett */
+        :root {
+            --bg-color: #1a1a2e; 
+            --card-bg: #1f2038; 
+            --primary-color: #00b4d8; 
+            --secondary-color: #ff7f50; 
+            --text-color-light: #f0f0f0; 
+            --text-color-dark: #a9a9b3; 
+            --font-stack: 'Roboto Mono', monospace; 
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-stack);
+            background-color: var(--bg-color);
+            color: var(--text-color-light);
+            overflow-x: hidden; 
+        }
+
+        .container {
+            width: 100vw;
+            min-height: 100vh;
             padding: 15px; 
-            border: 1px solid #ccc; 
-            border-radius: 8px;
-        }
-        #value-widget {
+            box-sizing: border-box;
             display: flex;
-            justify-content: space-around;
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: #f0f0f0; /* Lätt färg för att synas */
-            border-radius: 4px;
+            flex-direction: column;
+            align-items: center;
+            /* Extra utrymme för den fasta fotnoten */
+            padding-bottom: 50px; 
         }
-        .value-box {
+
+        h1 {
             text-align: center;
+            color: var(--primary-color);
+            margin: 5px 0 10px 0; 
+            font-size: 1.6em; 
+            font-weight: 700;
+            /* FIX: Rubriken är nu i standardformat (ingen uppercase) */
         }
-        .label {
+        
+        /* FIX: Diagrambehållaren återställd till att ta upp all ledig plats */
+        #chart-container {
+            position: relative;
+            flex-grow: 1; 
+            width: 100%; 
+            margin-bottom: 10px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 180, 216, 0.15); 
+            min-height: 200px; 
+        }
+
+        /* Filter CSS (oförändrat) */
+        .filter-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap; 
+        }
+        
+        .filter-controls label {
+            background-color: var(--card-bg);
+            padding: 8px 14px;
+            border-radius: 20px; 
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 400;
             font-size: 0.9em;
-            color: #555;
+            border: 1px solid var(--text-color-dark);
         }
-        .value-level {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #00b4d8; /* Cyan */
+        
+        .filter-controls input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: var(--bg-color); 
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
-        .value-flow {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #ff7f50; /* Orange */
+        
+        /* Fotnot CSS (oförändrat) */
+        .contact-info {
+            position: fixed; 
+            bottom: 0; 
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 0.8em;
+            color: var(--text-color-dark);
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(26, 26, 46, 0.95); 
+            z-index: 1000; 
+            border-top: 1px solid rgba(0, 180, 216, 0.1);
+        }
+
+        .contact-info a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 400;
+        }
+        
+        @media (max-width: 600px) {
+            .contact-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+                font-size: 0.75em;
+                padding: 8px 10px;
+            }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
-    <h1>Level and Flow Over Time</h1>
+    <div class="container">
+        <h1>💧 RiverPulse: Nivå och Flöde över Tid</h1>
 
-    <div id="chart-container">
-        <div id="value-widget">
-            <div class="value-box">
-                <div class="label" id="latest-update-time">Laddar data...</div>
-            </div>
-            <div class="value-box">
-                <div class="label">Nivå (m)</div>
-                <div class="value-level" id="latest-level">--</div>
-            </div>
-            <div class="value-box">
-                <div class="label">Flöde (m³/s)</div>
-                <div class="value-flow" id="latest-flow">--</div>
-            </div>
+        <div class="filter-controls">
+            <input type="radio" id="filter-day" name="time-filter" value="day" checked>
+            <label for="filter-day">Senaste 24 tim.</label>
+
+            <input type="radio" id="filter-week" name="time-filter" value="week">
+            <label for="filter-week">Senaste Veckan</label>
+
+            <input type="radio" id="filter-month" name="time-filter" value="month">
+            <label for="filter-month">Senaste Månaden</label>
+
+            <input type="radio" id="filter-year" name="time-filter" value="year">
+            <label for="filter-year">Senaste Året</label>
+        </div>
+
+        <div id="chart-container">
+            <canvas id="myChart"></canvas>
         </div>
         
-        <canvas id="myChart"></canvas>
+    </div>
+
+    <div class="contact-info">
+        <span>Data fr.o.m. 2025-11-08</span>
+        <span>Återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a></span>
     </div>
 
     <script src="linegraph.js"></script>

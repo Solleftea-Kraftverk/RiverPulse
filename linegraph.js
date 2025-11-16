@@ -8,6 +8,7 @@ const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00');
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
+    // Returnerar CSS-variabeln eller en fallback om den saknas
     return style.getPropertyValue(name).trim() || {
         '--primary-color': '#00b4d8', 
         '--secondary-color': '#ff7f50', 
@@ -18,24 +19,64 @@ function getCssVariable(name) {
     }[name] || ''; 
 }
 
-// NY FUNKTION: Uppdaterar den dedikerade HTML-widgeten
-function updateValueWidget(latestTimestamp, latestLevel, latestFlow) {
-    const timeEl = document.getElementById('latest-update-time');
-    const levelEl = document.getElementById('latest-level');
-    const flowEl = document.getElementById('latest-flow');
+// FIX: Plugin för att visa de senaste värdena.
+const latestValueLabelPlugin = {
+    id: 'customLabels',
+    latestWaterLevel: null,
+    latestFlow: null,
 
-    if (timeEl) {
-        // Formatera tiden till en mer läsbar sträng
-        const date = new Date(latestTimestamp);
-        timeEl.textContent = `Senast: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    afterDraw: (chart) => {
+        // Hämta hela canvasen och axlarna
+        const { ctx, scales: { 'water-level': y1, 'flow-rate': y2 } } = chart;
+        ctx.save();
+        
+        const primaryColor = getCssVariable('--primary-color');
+        const secondaryColor = getCssVariable('--secondary-color');
+        
+        if (latestValueLabelPlugin.latestWaterLevel === null) {
+             ctx.restore();
+             return;
+        }
+
+        // FIX: Använder chart.width (hela canvasbredden) minus en liten marginal (10px). 
+        // Detta garanterar att texten är i det absolut synliga området.
+        const xPos = chart.width - 10; 
+
+        ctx.font = '700 13px var(--font-stack)';
+        ctx.textAlign = 'right'; // FIX: Högerjustera texten så den sitter fast i högerkanten.
+        ctx.textBaseline = 'middle'; 
+
+        // Ritar ut Nivå-värdet (Cyan)
+        if (latestValueLabelPlugin.latestWaterLevel !== null && y1.ticks.length > 0) {
+            // Vi använder Nivå-axeln för att få den korrekta vertikala positionen
+            const latestY = y1.getPixelForValue(latestValueLabelPlugin.latestWaterLevel);
+            
+            ctx.fillStyle = primaryColor;
+            
+            ctx.fillText(
+                latestValueLabelPlugin.latestWaterLevel.toFixed(2) + ' m', 
+                xPos, 
+                latestY - 5 
+            );
+        }
+
+        // Ritar ut Flöde-värdet (Orange)
+        if (latestValueLabelPlugin.latestFlow !== null && y2.ticks.length > 0) {
+            // Vi använder Flöde-axeln för att få den korrekta vertikala positionen
+            const latestY = y2.getPixelForValue(latestValueLabelPlugin.latestFlow);
+            
+            ctx.fillStyle = secondaryColor;
+            
+            ctx.fillText(
+                latestValueLabelPlugin.latestFlow.toFixed(2) + ' m³/s', 
+                xPos, 
+                latestY + 15 
+            );
+        }
+
+        ctx.restore();
     }
-    if (levelEl) {
-        levelEl.textContent = latestLevel !== null ? latestLevel.toFixed(2) : '--';
-    }
-    if (flowEl) {
-        flowEl.textContent = latestFlow !== null ? latestFlow.toFixed(2) : '--';
-    }
-}
+};
 
 
 // Async function to fetch data from backend (med robust felhantering)
@@ -65,8 +106,6 @@ async function fetchData() {
     } catch (error) {
         console.error("Fel vid datahämtning eller bearbetning:", error.message);
         alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
-        // Vid fel, uppdatera widgeten med ett felmeddelande
-        updateValueWidget('Kunde ej ladda data', '--', '--'); 
     }
 }
 
@@ -117,13 +156,9 @@ function applyFilter(filter) {
     const waterLevels = filteredData.map(item => item.water_level);
     const flowValues = filteredData.map(item => item.flow);
     
-    const latestTimestamp = timestamps.length > 0 ? timestamps[timestamps.length - 1] : null;
     const latestWaterLevel = waterLevels.length > 0 ? waterLevels[waterLevels.length - 1] : null;
     const latestFlow = flowValues.length > 0 ? flowValues[flowValues.length - 1] : null;
 
-    // NY KOD: Uppdatera HTML-widgeten istället för att rita på canvas
-    updateValueWidget(latestTimestamp, latestWaterLevel, latestFlow);
-    
     let pointRadius = 2; 
     let tension = 0.4;   
 
@@ -133,22 +168,20 @@ function applyFilter(filter) {
     }
 
     if (chartInstance) {
-        // ENKELARE ANROP: tar bort onödiga plugin-parametrar
-        updateChart(timestamps, waterLevels, flowValues, filter, pointRadius, tension);
+        updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
-        // ENKELARE ANROP
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
     }
 }
 
 // Funktion för att uppdatera diagrammets data och axelkonfiguration
-// ENKELARE ANROP: tar bort latestWaterLevel och latestFlow
-function updateChart(timestamps, waterLevels, flowValues, filter, pointRadius, tension) {
+function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension) {
     chartInstance.data.labels = timestamps;
     chartInstance.data.datasets[0].data = waterLevels;
     chartInstance.data.datasets[1].data = flowValues;
 
-    // Inga fler uppdateringar av pluginet behövs
+    latestValueLabelPlugin.latestWaterLevel = latestWaterLevel;
+    latestValueLabelPlugin.latestFlow = latestFlow;
     
     chartInstance.data.datasets[0].pointRadius = (context) => context.dataIndex === context.dataset.data.length - 1 ? 5 : pointRadius;
     chartInstance.data.datasets[1].pointRadius = (context) => context.dataIndex === context.dataset.data.length - 1 ? 5 : pointRadius;
@@ -172,7 +205,6 @@ function updateChart(timestamps, waterLevels, flowValues, filter, pointRadius, t
 
 
 // Funktion för att skapa diagrammet med dubbla Y-axlar
-// ENKELARE ANROP: tar bort onödiga plugin-parametrar
 function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRadius, tension) {
     const ctx = document.getElementById('myChart').getContext('2d');
     
@@ -225,7 +257,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
             responsive: true,
             maintainAspectRatio: false, 
             plugins: {
-                // VIKTIGT: Pluginet för att rita ut värden är nu borttaget!
+                customLabels: latestValueLabelPlugin, 
                 tooltip: {
                     mode: 'index',
                     intersect: false,
@@ -309,7 +341,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                 }
             }
         },
-        plugins: [] // Listan är tom, inget eget plugin används
+        plugins: [latestValueLabelPlugin]
     });
 }
 
