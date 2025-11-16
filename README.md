@@ -13,5 +13,5 @@ Databasen är https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev
 - If all then just do Commit. But first do commit msg (AI symbol)
 - Press blue button (Synch) as long as it is blue button
 - If you need to regret latest commit: Open VS Code Terminal.
--- git reset --hard HEAD~1
--- git push --force
+    - git reset --hard HEAD~1
+    - git push --force

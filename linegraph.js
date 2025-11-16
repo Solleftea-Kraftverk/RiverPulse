@@ -32,7 +32,6 @@ const latestValueLabelPlugin = {
     latestFlow: null,
 
     afterDraw: (chart) => {
-        // Hämta hela canvasen och axlarna
         const { ctx, scales: { 'water-level': y1, 'flow-rate': y2 } } = chart;
         ctx.save();
         
@@ -50,7 +49,6 @@ const latestValueLabelPlugin = {
         ctx.textAlign = 'right'; 
         ctx.textBaseline = 'middle'; 
 
-        // Ritar ut Nivå-värdet (Cyan)
         if (latestValueLabelPlugin.latestWaterLevel !== null && y1.ticks.length > 0) {
             const latestY = y1.getPixelForValue(latestValueLabelPlugin.latestWaterLevel);
             
@@ -63,7 +61,6 @@ const latestValueLabelPlugin = {
             );
         }
 
-        // Ritar ut Flöde-värdet (Orange)
         if (latestValueLabelPlugin.latestFlow !== null && y2.ticks.length > 0) {
             const latestY = y2.getPixelForValue(latestValueLabelPlugin.latestFlow);
             
@@ -83,7 +80,6 @@ const latestValueLabelPlugin = {
 // Funktion för att hitta den förvalda radio-knappen (för filterpersistens)
 function getInitialFilter() {
     const checkedRadio = document.querySelector('input[name="time-filter"]:checked');
-    // Återgår till 'day' om inget är markerat (vilket det bör vara via loadActiveFilter i index.html)
     return checkedRadio ? checkedRadio.value : 'day'; 
 }
 
@@ -115,14 +111,16 @@ async function fetchData() {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // START: Använd det filter som är markerat i DOM:en (hanterar persistens)
         const initialFilter = getInitialFilter();
         applyFilter(initialFilter); 
         setupFilterListeners();
 
     } catch (error) {
         console.error("Fel vid datahämtning eller bearbetning:", error.message);
-        alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
+        // Visa inte alert vid rotation, bara vid initialt fel
+        if (!window.chartInstance) { 
+             alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
+        }
     }
 }
 
@@ -145,7 +143,6 @@ function applyFilter(filter) {
         return;
     }
 
-    // NY FUNKTION: Visa toast-meddelande vid val av 'Året'
     if (filter === 'year' && window.showToast) {
         window.showToast(`Inga data före ${MIN_DATE_STRING}.`);
     }
@@ -193,7 +190,6 @@ function applyFilter(filter) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension);
     } else {
         chartInstance = createChart(timestamps, waterLevels, flowValues, filter || 'day', pointRadius, tension);
-        window.chartInstance = chartInstance;
     }
 }
 
@@ -245,7 +241,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
     const gridColor = 'rgba(255, 255, 255, 0.1)'; 
     const cardBg = getCssVariable('--card-bg');
 
-    return new Chart(ctx, {
+    const newChartInstance = new Chart(ctx, {
         type: 'line', 
         data: {
             labels: timestamps, 
@@ -300,7 +296,6 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                 }
             },
             scales: {
-                // X-AXEL (Tidpunkt)
                 x: {
                     type: 'time',
                     time: {
@@ -327,7 +322,6 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                          drawBorder: false
                     }
                 },
-                // Y-AXEL 1 (Nivå)
                 'water-level': { 
                     type: 'linear',
                     position: 'left',
@@ -344,8 +338,6 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
                          drawBorder: false
                     }
                 },
-                
-                // Y-AXEL 2 (Flöde)
                 'flow-rate': { 
                     type: 'linear',
                     position: 'right', 
@@ -366,7 +358,13 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
         },
         plugins: [latestValueLabelPlugin]
     });
+
+    window.chartInstance = newChartInstance;
+    return newChartInstance;
 }
 
 // Starta hämtning av data
 fetchData();
+
+// NYTT TILLÄGG: Gör fetchData globalt tillgänglig för att kunna återskapa diagrammet efter rotation
+window.fetchData = fetchData;

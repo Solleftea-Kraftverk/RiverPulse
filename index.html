@@ -91,7 +91,6 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
-        /* CSS för fotnot och toast-meddelande */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -114,14 +113,13 @@
             font-weight: 400;
         }
 
-        /* NY STIL: Toast-meddelande */
         #toast-message {
             display: none; 
             position: fixed; 
             top: 10px; 
             left: 50%; 
             transform: translateX(-50%); 
-            background-color: var(--secondary-color); /* Orange */
+            background-color: var(--secondary-color); 
             color: var(--bg-color); 
             padding: 10px 20px; 
             border-radius: 5px; 
@@ -181,7 +179,6 @@
     <script src="linegraph.js" defer></script>
     
     <script>
-        // Global funktion för att visa det tillfälliga meddelandet
         window.showToast = function(message) {
             const toast = document.getElementById('toast-message');
             toast.textContent = message;
@@ -191,8 +188,6 @@
             }, 4000); 
         };
 
-        // --- Filter Persistence & Resize Logic ---
-        
         function getActiveFilter() {
             const active = document.querySelector('input[name="time-filter"]:checked');
             return active ? active.value : 'day';
@@ -212,33 +207,32 @@
             }
         }
 
-        // 1. Återställ filtervalet
         loadActiveFilter();
 
-        // 2. Lyssna på filterändringar för att spara det nya valet
         document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
             radio.addEventListener('change', saveActiveFilter);
         });
 
-        // 3. Hantera robust storleksändring (inkl. mobil rotation)
+        // Hanterar robust omladdning vid rotation (Tvingar ny instans av Chart.js)
         function handleResize() {
-            // Spara filter (sker ändå vid change, men bra som säkerhetskopia)
             saveActiveFilter(); 
             
-            // FIX: Använd debouncing för att tvinga Chart.js att rita om sig själv efter en liten delay.
-            // Detta garanterar att den läser den slutliga layouten/dimensionen.
             clearTimeout(window.resizeTimeout);
             window.resizeTimeout = setTimeout(() => {
                 if (window.chartInstance) {
-                    // Tvingar Chart.js att rita om sig med de nya dimensionerna
-                    window.chartInstance.resize(); 
+                    // 1. Förstör den gamla Chart.js-instansen
+                    window.chartInstance.destroy();
+                    window.chartInstance = null;
                 }
-            }, 200); // 200ms är en vanlig stabil fördröjning
+                
+                // 2. Tvinga Chart.js att rita om sig genom att kalla fetchData() igen.
+                if (window.fetchData) {
+                    window.fetchData();
+                }
+            }, 250); // 250ms fördröjning
         }
 
-        // Lyssna på standard resize-eventet (hanterar både PC resize och mobil rotation)
         window.addEventListener('resize', handleResize);
-        // Tog bort den gamla orientationchange-lyssnaren som kunde vara inkonsekvent.
     </script>
 </body>
 </html>
