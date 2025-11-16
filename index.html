@@ -188,11 +188,10 @@
             toast.style.display = 'block';
             setTimeout(() => {
                 toast.style.display = 'none';
-            }, 4000); // Visar i 4 sekunder
+            }, 4000); 
         };
 
-        // --- Filter Persistence & Orientation Logic ---
-        let lastOrientation = window.orientation;
+        // --- Filter Persistence & Resize Logic ---
         
         function getActiveFilter() {
             const active = document.querySelector('input[name="time-filter"]:checked');
@@ -205,7 +204,6 @@
 
         function loadActiveFilter() {
             const savedFilter = sessionStorage.getItem('activeFilter');
-            // Använd 'day' som standard om inget är sparat
             const filterToLoad = savedFilter || 'day'; 
             
             const radio = document.getElementById(`filter-${filterToLoad}`);
@@ -214,7 +212,7 @@
             }
         }
 
-        // 1. Återställ filtervalet innan linegraph.js laddas
+        // 1. Återställ filtervalet
         loadActiveFilter();
 
         // 2. Lyssna på filterändringar för att spara det nya valet
@@ -222,22 +220,25 @@
             radio.addEventListener('change', saveActiveFilter);
         });
 
-        // 3. Hantera skärmrotation (mobil)
-        function handleOrientationChange() {
-            // Spara filter innan eventuell omladdning/storleksändring
+        // 3. Hantera robust storleksändring (inkl. mobil rotation)
+        function handleResize() {
+            // Spara filter (sker ändå vid change, men bra som säkerhetskopia)
             saveActiveFilter(); 
             
-            if (window.orientation !== lastOrientation) {
+            // FIX: Använd debouncing för att tvinga Chart.js att rita om sig själv efter en liten delay.
+            // Detta garanterar att den läser den slutliga layouten/dimensionen.
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(() => {
                 if (window.chartInstance) {
-                    // Försök tvinga Chart.js att rita om sig själv
-                    window.chartInstance.resize();
-                } 
-            }
-            lastOrientation = window.orientation;
+                    // Tvingar Chart.js att rita om sig med de nya dimensionerna
+                    window.chartInstance.resize(); 
+                }
+            }, 200); // 200ms är en vanlig stabil fördröjning
         }
 
-        window.addEventListener('orientationchange', handleOrientationChange);
-        window.addEventListener('resize', handleOrientationChange);
+        // Lyssna på standard resize-eventet (hanterar både PC resize och mobil rotation)
+        window.addEventListener('resize', handleResize);
+        // Tog bort den gamla orientationchange-lyssnaren som kunde vara inkonsekvent.
     </script>
 </body>
 </html>
