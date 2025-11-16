@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     
     <style>
-        /* CSS baserad på en Dark/High-Contrast palett */
+        /* ... Din CSS här ... */
         :root {
             --bg-color: #1a1a2e; 
             --card-bg: #1f2038; 
@@ -22,7 +22,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
-            /* Använder dvh för mer stabil höjd på mobiler */
             height: 100dvh; 
             margin: 0;
             padding: 0;
@@ -180,67 +179,5 @@
     </div>
 
     <script src="linegraph.js" defer></script>
-    
-    <script>
-        window.showToast = function(message) {
-            const toast = document.getElementById('toast-message');
-            toast.textContent = message;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 4000); 
-        };
-
-        // --- Filter Persistence Logic ---
-        function getActiveFilter() {
-            const active = document.querySelector('input[name="time-filter"]:checked');
-            return active ? active.value : 'day';
-        }
-
-        function saveActiveFilter() {
-            sessionStorage.setItem('activeFilter', getActiveFilter());
-        }
-
-        function loadActiveFilter() {
-            const savedFilter = sessionStorage.getItem('activeFilter');
-            const filterToLoad = savedFilter || 'day'; 
-            
-            const radio = document.getElementById(`filter-${filterToLoad}`);
-            if (radio) {
-                radio.checked = true;
-            }
-        }
-
-        loadActiveFilter();
-
-        document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
-            radio.addEventListener('change', saveActiveFilter);
-        });
-
-        // 3. FIX: Hanterar robust omladdning vid rotation (Tvingar ny instans av Chart.js)
-        function handleResize() {
-            // Säkerställer att det aktiva filtervalet är sparat
-            saveActiveFilter(); 
-            
-            // Använder debouncing för att vänta på att layouten ska stabiliseras
-            clearTimeout(window.resizeTimeout);
-            window.resizeTimeout = setTimeout(() => {
-                if (window.chartInstance) {
-                    // 1. Förstör den gamla Chart.js-instansen
-                    // Detta är den viktigaste fixen för att undvika krasch vid rotation
-                    window.chartInstance.destroy();
-                    window.chartInstance = null;
-                }
-                
-                // 2. Tvinga Chart.js att rita om sig genom att kalla fetchData() igen.
-                // fetchData() skapar en ny instans baserat på det sparade filtervalet.
-                if (window.fetchData) {
-                    window.fetchData();
-                }
-            }, 250); // 250ms delay för maximal stabilitet
-        }
-
-        window.addEventListener('resize', handleResize);
-    </script>
 </body>
 </html>
