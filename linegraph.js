@@ -7,6 +7,7 @@ const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00');
 
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
+    // Hämta värdet och trimma bort eventuella mellanslag
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
@@ -54,7 +55,6 @@ function setupFilterListeners() {
 // Funktion för att filtrera data och uppdatera diagrammet
 function applyFilter(filter) {
     if (riverData.length === 0) {
-        console.warn("Ingen data tillgänglig efter filtrering.");
         if (chartInstance) chartInstance.update();
         return;
     }
@@ -99,7 +99,6 @@ function applyFilter(filter) {
 
 // Funktion för att uppdatera diagrammets data och axelkonfiguration
 function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow) {
-    // ... (Logik för att uppdatera data och axel som tidigare) ...
     chartInstance.data.labels = timestamps;
     chartInstance.data.datasets[0].data = waterLevels;
     chartInstance.data.datasets[1].data = flowValues;
@@ -115,7 +114,6 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
     
     chartInstance.options.scales.x.time.unit = unit;
     
-    // Uppdatera plugins för att rita ut senaste värdet
     chartInstance.options.plugins.customLabels.latestWaterLevel = latestWaterLevel;
     chartInstance.options.plugins.customLabels.latestFlow = latestFlow;
     
@@ -150,34 +148,35 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
             const lastIndex = chart.data.labels.length - 1;
             if (lastIndex < 0) return;
 
-            // Ritar ut Nivå-värdet (vänster axel)
+            // Få X-positionen för den sista punkten
+            const xPos = chart.getDatasetMeta(0).data[lastIndex]?.x || right; 
+
+            // Ritar ut Nivå-värdet (vänster axel - Cyan)
             if (latestWaterLevel !== null && y1.ticks.length > 0) {
-                const xPos = chart.getDatasetMeta(0).data[lastIndex].x;
                 const latestY = y1.getPixelForValue(latestWaterLevel);
                 
-                // Högkontrast text och tydligare positionering
-                ctx.font = '700 12px var(--font-stack)';
+                ctx.font = '700 13px var(--font-stack)';
                 ctx.textAlign = 'left';
                 ctx.fillStyle = primaryColor;
                 
+                // Positionering lite till höger om sista punkten
                 ctx.fillText(
-                    latestWaterLevel.toFixed(2), 
-                    xPos + 8, // Flytta lite högerut från punkten
+                    latestWaterLevel.toFixed(2) + ' m', 
+                    xPos + 8, 
                     latestY - 5 
                 );
             }
 
-            // Ritar ut Flöde-värdet (höger axel)
+            // Ritar ut Flöde-värdet (höger axel - Orange)
             if (latestFlow !== null && y2.ticks.length > 0) {
-                const xPos = chart.getDatasetMeta(1).data[lastIndex].x;
                 const latestY = y2.getPixelForValue(latestFlow);
                 
-                ctx.font = '700 12px var(--font-stack)';
+                ctx.font = '700 13px var(--font-stack)';
                 ctx.textAlign = 'left';
                 ctx.fillStyle = secondaryColor;
                 
                 ctx.fillText(
-                    latestFlow.toFixed(2), 
+                    latestFlow.toFixed(2) + ' m³/s', 
                     xPos + 8, 
                     latestY + 15 
                 );
@@ -191,7 +190,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
     const secondaryColor = getCssVariable('--secondary-color');
     const textColorLight = getCssVariable('--text-color-light');
     const textColorDark = getCssVariable('--text-color-dark');
-    const gridColor = 'rgba(255, 255, 255, 0.15)'; // Lättare rutnät för mörk bakgrund
+    const gridColor = 'rgba(255, 255, 255, 0.1)'; 
     const cardBg = getCssVariable('--card-bg');
 
     return new Chart(ctx, {
@@ -201,27 +200,25 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
             datasets: [{
                 label: 'Nivå (m)', 
                 data: waterLevels,
-                borderColor: primaryColor,
-                backgroundColor: 'transparent',
-                fill: false,
-                // Större punkt på sista värdet
-                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 6 : 2, 
+                borderColor: primaryColor, // Distinkt färg 1
+                backgroundColor: 'rgba(0, 180, 216, 0.1)',
+                fill: 'origin', // Använder färgfyllning under linjen
+                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, // Större sista punkt
                 pointBackgroundColor: primaryColor,
-                pointHoverRadius: 8,
-                borderWidth: 2.5, // Lite tjockare linje
+                pointHoverRadius: 9,
+                borderWidth: 3, 
                 yAxisID: 'water-level' 
             },
             {
                 label: 'Flöde (m³/s)', 
                 data: flowValues,
-                borderColor: secondaryColor,
-                backgroundColor: 'transparent',
-                fill: false,
-                // Större punkt på sista värdet
-                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 6 : 2, 
+                borderColor: secondaryColor, // Distinkt färg 2
+                backgroundColor: 'rgba(255, 127, 80, 0.1)',
+                fill: false, // Ingen fyllning för att undvika överlappning
+                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, 
                 pointBackgroundColor: secondaryColor,
-                pointHoverRadius: 8,
-                borderWidth: 2.5, 
+                pointHoverRadius: 9,
+                borderWidth: 3, 
                 yAxisID: 'flow-rate' 
             }]
         },
@@ -243,12 +240,13 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                     position: 'top',
                     labels: {
                         color: textColorLight,
-                        usePointStyle: true
+                        usePointStyle: true,
+                        boxWidth: 10
                     }
                 }
             },
             scales: {
-                // X-AXEL
+                // X-AXEL (Tidpunkt)
                 x: {
                     type: 'time',
                     time: {
@@ -266,7 +264,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                         color: textColorLight
                     },
                     ticks: {
-                        color: textColorDark, // Ljusare grå för bättre kontrast
+                        color: textColorDark, 
                         maxRotation: 45, 
                         minRotation: 0,
                     },
@@ -306,7 +304,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                         color: secondaryColor
                     },
                     grid: { 
-                        drawOnChartArea: false, 
+                        drawOnChartArea: false, // Inget rutnät i diagrammet för denna axel
                         drawBorder: false
                     } 
                 }
