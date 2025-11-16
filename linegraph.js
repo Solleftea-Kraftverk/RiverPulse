@@ -1,13 +1,11 @@
 // Global variabel för att lagra all hämtad data
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
-let chartInstance = null; 
-// Flagga för att säkerställa att lyssnarna bara sätts upp en gång
-let listenersSetup = false;
+let chartInstance = null;
+// Definierar den tidigaste tillåtna datan: 2025-11-08 i millisekunder
+const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00'); 
 
-// Konstanter
-const MIN_DATE_STRING = '2025-11-08'; 
-const MIN_TIMESTAMP = Date.parse(`${MIN_DATE_STRING}T00:00:00`); 
+// Konstanter för CSS Fallbacks (förbättrad hantering)
 const CSS_FALLBACKS = {
     '--primary-color': '#00b4d8', 
     '--secondary-color': '#ff7f50', 
@@ -20,10 +18,11 @@ const CSS_FALLBACKS = {
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
+    // Returnerar CSS-variabeln eller en fallback
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-// Plugin för att visa de senaste värdena. 
+// FIX: Plugin för att visa de senaste värdena (Oförändrad, baserad på din backup)
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -76,7 +75,7 @@ const latestValueLabelPlugin = {
 };
 
 
-// Async function to fetch data from backend (utan retry-logik)
+// Async function to fetch data from backend
 async function fetchData() {
     try {
         const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
@@ -90,7 +89,8 @@ async function fetchData() {
         riverData = data
             .map(item => {
                 const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
-                item.timestamp = Date.parse(dateStr); 
+                item.timestamp = Date.parse(dateStr);
+                // FIX: Konvertera water_level och flow till nummer för säkerhet 
                 item.water_level = parseFloat(item.water_level);
                 item.flow = parseFloat(item.flow);
                 return item;
@@ -98,6 +98,7 @@ async function fetchData() {
             .filter(item => 
                 !isNaN(item.timestamp) && 
                 item.timestamp >= MIN_TIMESTAMP &&
+                // FIX: Filtrera bort ogiltiga numeriska värden
                 !isNaN(item.water_level) &&
                 !isNaN(item.flow)
             );
@@ -105,9 +106,13 @@ async function fetchData() {
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
         applyFilter(getActiveFilter()); 
+        
+        // ÅTERSTÄLLD STABIL LOGIK: Sätt upp lyssnare ENBART efter att datan är hämtad
+        setupFilterListeners();
 
     } catch (error) {
         console.error("Fel vid datahämtning eller bearbetning:", error.message);
+        // Använd den kortare alert-texten
         alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
     }
 }
@@ -119,32 +124,20 @@ function getActiveFilter() {
 }
 
 
-// FIX: Funktion för att sätta upp händelselyssnare
+// Funktion för att sätta upp händelselyssnare för radio-knapparna (Din ursprungliga, stabila funktion)
 function setupFilterListeners() {
-    // Förhindra dubbla instanser
-    if (listenersSetup) return; 
-
     const filters = document.querySelectorAll('input[name="time-filter"]');
-    
-    // DEBUG/SÄKERHETSKONTROLL: Kontrollera om elementen faktiskt hittas
-    if (filters.length === 0) {
-        console.error("KRITISKT FEL: Inga filterknappar hittades med name='time-filter'. Kontrollera index.html.");
-        return; 
-    }
-
-    filters.forEach(filter => {
-        // Kontrollera typ och värde för maximal säkerhet
-        if (filter.type === 'radio' && filter.value) {
+    if (filters.length > 0) {
+        filters.forEach(filter => {
             filter.addEventListener('change', (event) => {
                 applyFilter(event.target.value);
             });
-        }
-    });
-    listenersSetup = true;
+        });
+    }
 }
 
 
-// Funktion för att filtrera data och uppdatera diagrammet 
+// Funktion för att filtrera data och uppdatera diagrammet
 function applyFilter(filter) {
     if (riverData.length === 0) {
         if (chartInstance) chartInstance.update();
@@ -197,7 +190,7 @@ function applyFilter(filter) {
     }
 }
 
-// Funktion för att uppdatera diagrammets data och axelkonfiguration 
+// Funktion för att uppdatera diagrammets data och axelkonfiguration
 function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension) {
     chartInstance.data.labels = timestamps;
     chartInstance.data.datasets[0].data = waterLevels;
@@ -223,11 +216,12 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
     
     chartInstance.options.scales.x.time.unit = unit;
     
-    chartInstance.resize();
+    // Använd .update() som i din backup - den är snabbare än .resize() om rotation inte är ett problem.
+    chartInstance.update(); 
 }
 
 
-// Funktion för att skapa diagrammet 
+// Funktion för att skapa diagrammet med dubbla Y-axlar
 function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRadius, tension) {
     const ctx = document.getElementById('myChart').getContext('2d');
     
@@ -364,8 +358,5 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
     });
 }
 
-// Starta initial laddning av data
+// Starta hämtning av data
 fetchData();
-
-// KRITISK FIX: Sätt upp filterlyssnare efter att DOM är helt laddad.
-document.addEventListener('DOMContentLoaded', setupFilterListeners);

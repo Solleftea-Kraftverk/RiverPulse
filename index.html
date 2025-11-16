@@ -22,31 +22,32 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
-            /* FIX: Använd 100dvh för stabil höjd vid mobilt rotering */
-            height: 100dvh; 
+            /* Återställd till din stabila bas: */
+            height: 100%;
             margin: 0;
             padding: 0;
             font-family: var(--font-stack);
             background-color: var(--bg-color);
             color: var(--text-color-light);
-            /* Borta: overflow-x: hidden; */
+            overflow-x: hidden; 
         }
 
         .container {
             width: 100vw;
-            /* FIX: Använd 100dvh för stabil höjd vid mobilt rotering */
-            min-height: 100dvh; 
+            min-height: 100vh; /* Återställd till din stabila bas */
             padding: 15px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* Extra utrymme för den fasta fotnoten */
             padding-bottom: 50px; 
-            max-width: 1400px; 
+            max-width: 1400px; /* Förbättring för desktop-vy */
             margin: 0 auto;
         }
 
         h1 {
+            /* FIX: Rubriktextändring */
             text-align: center;
             color: var(--primary-color);
             margin: 5px 0 10px 0; 
@@ -66,18 +67,18 @@
             min-height: 200px; 
         }
 
-        /* Filter CSS */
+        /* Filter CSS (oförändrat) */
         .filter-controls {
             display: flex;
             justify-content: center;
-            gap: 10px; 
+            gap: 10px; /* Justerad gap */
             margin-bottom: 15px;
             flex-wrap: wrap; 
         }
         
         .filter-controls label {
             background-color: var(--card-bg);
-            padding: 8px 12px; 
+            padding: 8px 12px; /* Justerad padding */
             border-radius: 20px; 
             cursor: pointer;
             transition: background-color 0.2s;
@@ -94,24 +95,7 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
-        /* Toast-meddelande (nödvändigt element) */
-        #toast-message {
-            display: none; 
-            position: fixed; 
-            top: 10px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            background-color: var(--secondary-color);
-            color: var(--bg-color); 
-            padding: 10px 20px; 
-            border-radius: 5px; 
-            z-index: 2000; 
-            font-size: 0.9em; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            font-weight: 700;
-        }
-        
-        /* Fotnot CSS */
+        /* Fotnot CSS (oförändrat) */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -150,8 +134,6 @@
     </style>
 </head>
 <body>
-    <div id="toast-message" aria-live="assertive"></div>
-
     <div class="container">
         <h1>💧 RiverPulse: Nivå/Flöde över Tid</h1>
 
