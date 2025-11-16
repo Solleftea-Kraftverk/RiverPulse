@@ -26,6 +26,7 @@ const latestValueLabelPlugin = {
     latestFlow: null,
 
     afterDraw: (chart) => {
+        // Hämta hela canvasen och axlarna
         const { ctx, scales: { 'water-level': y1, 'flow-rate': y2 } } = chart;
         ctx.save();
         
@@ -37,16 +38,17 @@ const latestValueLabelPlugin = {
              return;
         }
 
-        // FIX: Ändrat position och justering för att garantera synlighet.
-        // xPos sätts till 15px in från den yttre högra kanten av Y-axeln.
-        const xPos = y2.right - 15; 
+        // FIX: Använder chart.width (hela canvasbredden) minus en liten marginal (10px). 
+        // Detta garanterar att texten är i det absolut synliga området.
+        const xPos = chart.width - 10; 
 
         ctx.font = '700 13px var(--font-stack)';
-        ctx.textAlign = 'right'; // FIX 1: Högerjustera texten.
+        ctx.textAlign = 'right'; // FIX: Högerjustera texten så den sitter fast i högerkanten.
         ctx.textBaseline = 'middle'; 
 
         // Ritar ut Nivå-värdet (Cyan)
         if (latestValueLabelPlugin.latestWaterLevel !== null && y1.ticks.length > 0) {
+            // Vi använder Nivå-axeln för att få den korrekta vertikala positionen
             const latestY = y1.getPixelForValue(latestValueLabelPlugin.latestWaterLevel);
             
             ctx.fillStyle = primaryColor;
@@ -60,6 +62,7 @@ const latestValueLabelPlugin = {
 
         // Ritar ut Flöde-värdet (Orange)
         if (latestValueLabelPlugin.latestFlow !== null && y2.ticks.length > 0) {
+            // Vi använder Flöde-axeln för att få den korrekta vertikala positionen
             const latestY = y2.getPixelForValue(latestValueLabelPlugin.latestFlow);
             
             ctx.fillStyle = secondaryColor;
