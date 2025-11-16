@@ -93,6 +93,22 @@
         }
         
         /* CSS för fotnot och toast-meddelande */
+        #toast-message {
+            display: none; 
+            position: fixed; 
+            top: 10px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background-color: var(--secondary-color); /* Orange */
+            color: var(--bg-color); 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            z-index: 2000; 
+            font-size: 0.9em; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            font-weight: 700;
+        }
+        
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -113,23 +129,6 @@
             color: var(--primary-color);
             text-decoration: none;
             font-weight: 400;
-        }
-
-        /* NY STIL: Toast-meddelande */
-        #toast-message {
-            display: none; 
-            position: fixed; 
-            top: 10px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            background-color: var(--secondary-color); /* Orange */
-            color: var(--bg-color); 
-            padding: 10px 20px; 
-            border-radius: 5px; 
-            z-index: 2000; 
-            font-size: 0.9em; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            font-weight: 700;
         }
         
         @media (max-width: 600px) {
@@ -217,8 +216,6 @@
         // Lyssna på filterändringar, spara och anropa applyFilter från linegraph.js
         document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
             radio.addEventListener('change', saveActiveFilter);
-            // VIKTIG JUSTERING: Vi behåller anropet till applyFilter via window,
-            // men säkerställer att fetchData alltid anropas vid rotation.
             radio.addEventListener('change', (event) => window.applyFilter(event.target.value)); 
         });
 
@@ -230,20 +227,39 @@
             saveActiveFilter(); 
             
             clearTimeout(resizeTimeout);
+            // FIX: Ökad delay till 500ms för ökad stabilitet på mobila enheter
             resizeTimeout = setTimeout(() => {
-                // FÖRSTÖR diagrammet och Tvinga omladdning
+                
+                // 1. FÖRSTÖR GAMMAL INSTANS
                 if (window.chartInstance) {
                     window.chartInstance.destroy();
-                    // VIKTIGT: Nollställ referensen
-                    window.chartInstance = null; 
+                    window.chartInstance = null;
                 }
                 
-                // Anropa fetchData som nu är globalt exponerad från linegraph.js
-                // Detta återskapar diagrammet baserat på de nya dimensionerna
+                // 2. FIX: Tvinga ny canvas-kontext genom att ersätta elementet.
+                // Detta är det mest aggressiva och stabila sättet att hantera kontextförlust.
+                const chartContainer = document.getElementById('chart-container');
+                const oldCanvas = document.getElementById('myChart');
+
+                if (oldCanvas) {
+                    oldCanvas.remove(); // Ta bort den gamla canvasen
+                }
+                
+                // Skapa en helt ny canvas
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = 'myChart';
+                newCanvas.setAttribute('role', 'img');
+                newCanvas.setAttribute('aria-label', 'Linjediagram som visar vattennivå och flöde över tid, med valbart tidsfilter.');
+                
+                // Sätt in den nya canvasen i containern
+                chartContainer.appendChild(newCanvas);
+                
+                // 3. Återskapa diagrammet
+                // Anropa fetchData som är globalt exponerad från linegraph.js
                 if (window.fetchData) {
                     window.fetchData();
                 }
-            }, 250); // 250ms delay för maximal stabilitet
+            }, 500); 
         }
 
         window.addEventListener('resize', handleResize);
