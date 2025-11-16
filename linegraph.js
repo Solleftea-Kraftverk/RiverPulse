@@ -22,7 +22,30 @@ function getCssVariable(name) {
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-// FIX: Plugin för att visa de senaste värdena (Oförändrad, baserad på din backup)
+// NY FUNKTION: För att visa ett tillfälligt meddelande (Toast)
+function showToastMessage(message, duration = 3000) {
+    const toast = document.getElementById('toast-message');
+    if (!toast) return;
+
+    toast.textContent = message;
+    toast.style.display = 'block';
+    // Sätt opacity till 1 för att tona in
+    setTimeout(() => {
+        toast.style.opacity = '1';
+    }, 10);
+
+    // Dölj meddelandet efter duration
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        // Dölj elementet helt efter transitionen är klar
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 300); // 300ms matchar CSS transition-tiden
+    }, duration);
+}
+
+
+// Plugin för att visa de senaste värdena. 
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -90,7 +113,6 @@ async function fetchData() {
             .map(item => {
                 const dateStr = item.latest_update.replace(/^Senast uppdaterat\s*/, '');
                 item.timestamp = Date.parse(dateStr);
-                // FIX: Konvertera water_level och flow till nummer för säkerhet 
                 item.water_level = parseFloat(item.water_level);
                 item.flow = parseFloat(item.flow);
                 return item;
@@ -98,7 +120,6 @@ async function fetchData() {
             .filter(item => 
                 !isNaN(item.timestamp) && 
                 item.timestamp >= MIN_TIMESTAMP &&
-                // FIX: Filtrera bort ogiltiga numeriska värden
                 !isNaN(item.water_level) &&
                 !isNaN(item.flow)
             );
@@ -107,12 +128,11 @@ async function fetchData() {
 
         applyFilter(getActiveFilter()); 
         
-        // ÅTERSTÄLLD STABIL LOGIK: Sätt upp lyssnare ENBART efter att datan är hämtad
+        // STABIL LOGIK: Sätt upp lyssnare ENBART efter att datan är hämtad
         setupFilterListeners();
 
     } catch (error) {
         console.error("Fel vid datahämtning eller bearbetning:", error.message);
-        // Använd den kortare alert-texten
         alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
     }
 }
@@ -124,7 +144,7 @@ function getActiveFilter() {
 }
 
 
-// Funktion för att sätta upp händelselyssnare för radio-knapparna (Din ursprungliga, stabila funktion)
+// Funktion för att sätta upp händelselyssnare för radio-knapparna
 function setupFilterListeners() {
     const filters = document.querySelectorAll('input[name="time-filter"]');
     if (filters.length > 0) {
@@ -165,6 +185,12 @@ function applyFilter(filter) {
     }
     
     const finalStartTime = Math.max(startTime, MIN_TIMESTAMP);
+
+    // NY LOGIK: Visa meddelande om filtret är "year" och datan begränsades av MIN_TIMESTAMP
+    if (filter === 'year' && finalStartTime === MIN_TIMESTAMP) {
+        // Formaterar datumet för att matcha din fotnot
+        showToastMessage(`OBS: Data visas endast fr.o.m. ${new Date(MIN_TIMESTAMP).toLocaleDateString('sv-SE')}`);
+    }
 
     const filteredData = riverData.filter(item => item.timestamp >= finalStartTime);
 
@@ -216,7 +242,6 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
     
     chartInstance.options.scales.x.time.unit = unit;
     
-    // Använd .update() som i din backup - den är snabbare än .resize() om rotation inte är ett problem.
     chartInstance.update(); 
 }
 
