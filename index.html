@@ -18,10 +18,11 @@
             --text-color-dark: #a9a9b3; 
             --font-stack: 'Roboto Mono', monospace; 
         }
-
+        
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
+            /* Använd dvh för att hantera V/H krocken */
             height: 100dvh; 
             margin: 0;
             padding: 0;
@@ -33,6 +34,7 @@
 
         .container {
             width: 100vw;
+            /* Använd min-height för att säkerställa att innehållet fyller skärmen */
             min-height: 100dvh; 
             padding: 15px; 
             box-sizing: border-box;
@@ -64,6 +66,7 @@
             min-height: 200px; 
         }
 
+        /* Filter CSS */
         .filter-controls {
             display: flex;
             justify-content: center;
@@ -91,14 +94,14 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
-        /* CSS för fotnot och toast-meddelande */
+        /* Toast-meddelande (nödvändigt för linegraph.js) */
         #toast-message {
             display: none; 
             position: fixed; 
             top: 10px; 
             left: 50%; 
             transform: translateX(-50%); 
-            background-color: var(--secondary-color); /* Orange */
+            background-color: var(--secondary-color);
             color: var(--bg-color); 
             padding: 10px 20px; 
             border-radius: 5px; 
@@ -108,6 +111,7 @@
             font-weight: 700;
         }
         
+        /* Fotnot CSS */
         .contact-info {
             position: fixed; 
             bottom: 0; 
@@ -177,6 +181,6 @@
         <span>Återkoppling: <a href="mailto:drake.stromberg@gmail.com">drake.stromberg@gmail.com</a></span>
     </div>
 
-    <script src="linegraph.js" defer></script>
+    <script src="linegraph.js"></script>
 </body>
 </html>

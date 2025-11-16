@@ -1,13 +1,13 @@
-// --- Global State ---
+// Global variabel för att lagra all hämtad data
 let riverData = [];
-let chartInstance = null;
-window.chartInstance = chartInstance; // Gör den globalt tillgänglig
-let resizeTimeout; // För debounce av rotation
+// Global variabel för att hålla diagraminstansen
+let chartInstance = null; 
+window.chartInstance = chartInstance; // Gör chartInstance globalt tillgänglig.
 
-// --- Konstanter ---
+// Konstanter
 const MIN_DATE_STRING = '2025-11-08'; 
 const MIN_TIMESTAMP = Date.parse(`${MIN_DATE_STRING}T00:00:00`); 
-const MAX_RETRIES = 3; 
+const MAX_RETRIES = 3; // FIX: Max antal återförsök för datahämtning
 const CSS_FALLBACKS = {
     '--primary-color': '#00b4d8', 
     '--secondary-color': '#ff7f50', 
@@ -17,98 +17,13 @@ const CSS_FALLBACKS = {
     '--card-bg': '#1f2038'
 };
 
-// --- Hjälpfunktioner ---
-
+// Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-// Global funktion för att visa det tillfälliga meddelandet (Förutsätter #toast-message i HTML)
-window.showToast = function(message) {
-    const toast = document.getElementById('toast-message');
-    if (!toast) return; 
-    toast.textContent = message;
-    toast.style.display = 'block';
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 4000); 
-};
-
-// Filterhantering
-function getActiveFilter() {
-    const active = document.querySelector('input[name="time-filter"]:checked');
-    return active ? active.value : 'day';
-}
-
-function saveActiveFilter() {
-    sessionStorage.setItem('activeFilter', getActiveFilter());
-}
-
-function loadActiveFilter() {
-    const savedFilter = sessionStorage.getItem('activeFilter');
-    const filterToLoad = savedFilter || 'day'; 
-    
-    const radio = document.getElementById(`filter-${filterToLoad}`);
-    if (radio) {
-        radio.checked = true;
-    }
-}
-
-// --- Rotation & Filter Lyssnar-Funktion ---
-
-function setupListeners() {
-    // 1. Återställ filtervalet från lagring
-    loadActiveFilter();
-
-    // 2. Lyssna på filterändringar (sparar och applicerar)
-    document.querySelectorAll('input[name="time-filter"]').forEach(radio => {
-        radio.addEventListener('change', (event) => {
-            saveActiveFilter();
-            applyFilter(event.target.value);
-        });
-    });
-    
-    // 3. Lyssna på storleksändring (rotation) med Canvas-ersättningsfix
-    window.addEventListener('resize', handleResize);
-}
-
-// Hanterar robust omladdning vid rotation (med Canvas-ersättning)
-function handleResize() {
-    saveActiveFilter(); 
-    
-    clearTimeout(resizeTimeout);
-    // 500ms delay för maximal stabilitet på mobila enheter
-    resizeTimeout = setTimeout(() => {
-        
-        // 1. FÖRSTÖR GAMMAL INSTANS
-        if (window.chartInstance) {
-            window.chartInstance.destroy();
-            window.chartInstance = null;
-        }
-        
-        // 2. FIX: Tvinga ny canvas-kontext genom att ersätta elementet.
-        const chartContainer = document.getElementById('chart-container');
-        const oldCanvas = document.getElementById('myChart');
-
-        if (oldCanvas) {
-            oldCanvas.remove(); 
-        }
-        
-        const newCanvas = document.createElement('canvas');
-        newCanvas.id = 'myChart';
-        newCanvas.setAttribute('role', 'img');
-        newCanvas.setAttribute('aria-label', 'Linjediagram som visar vattennivå och flöde över tid, med valbart tidsfilter.');
-        
-        chartContainer.appendChild(newCanvas);
-        
-        // 3. Återskapa diagrammet genom att hämta data på nytt
-        fetchData();
-    }, 500); 
-}
-
-// --- CHART.JS Plugin (Oförändrad) ---
-
+// FIX: Plugin för att visa de senaste värdena. (Oförändrad)
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -160,13 +75,20 @@ const latestValueLabelPlugin = {
     }
 };
 
-// --- DATAHÄMTNING (Med Retry Logic) ---
+// Funktion för att hitta det aktiva radio-valet
+function getActiveFilter() {
+    const active = document.querySelector('input[name="time-filter"]:checked');
+    return active ? active.value : 'day'; 
+}
 
+
+// FIX: Async function to fetch data from backend (med robust felhantering och återförsök)
 async function fetchData(retryCount = 0) {
     try {
         const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
         
         if (!response.ok) {
+            // Om HTTP-status är dålig, behandla som ett fel och trigga retry
             throw new Error(`HTTP-fel! Status: ${response.status}. Kan bero på nätverksblockering.`);
         }
 
@@ -189,30 +111,27 @@ async function fetchData(retryCount = 0) {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // KÖR LYSSNARE ENDAST EN GÅNG VID FÖRSTA LYCKADE ANROPET
-        if (retryCount === 0 && !window.listenersSetup) {
-            setupListeners();
-            window.listenersSetup = true;
-        }
-
+        // APPLICERA FILTER BASERAT PÅ VAD SOM ÄR MARKERAT
         applyFilter(getActiveFilter()); 
 
     } catch (error) {
+        // Logga felet och försök
         console.error(`Fel vid datahämtning eller bearbetning (Försök ${retryCount + 1}/${MAX_RETRIES}):`, error.message);
         
+        // FIX: Hantera återförsök
         if (retryCount < MAX_RETRIES - 1) { 
+            // Vänta 1 sekund * (nuvarande försök nummer)
             await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); 
             console.log(`Försöker ladda data igen... (Försök ${retryCount + 2})`);
-            return fetchData(retryCount + 1); 
+            return fetchData(retryCount + 1); // Anropa rekursivt
         }
 
-        // Endast visa det allvarliga felmeddelandet efter ALLA försök har misslyckats
+        // FIX: Endast visa ett slutgiltigt alert efter ALLA försök har misslyckats
         alert("KRITISKT FEL: Kunde inte ladda data efter flera försök. Diagrammet kan inte visas.");
     }
 }
 
-// --- APPLY FILTER & UPDATE CHART (Oförändrad) ---
-
+// Funktion för att filtrera data och uppdatera diagrammet
 function applyFilter(filter) {
     if (riverData.length === 0) {
         if (chartInstance) chartInstance.update();
@@ -269,6 +188,7 @@ function applyFilter(filter) {
     }
 }
 
+// Funktion för att uppdatera diagrammets data och axelkonfiguration
 function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow, pointRadius, tension) {
     chartInstance.data.labels = timestamps;
     chartInstance.data.datasets[0].data = waterLevels;
@@ -298,6 +218,7 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
 }
 
 
+// Funktion för att skapa diagrammet med dubbla Y-axlar
 function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRadius, tension) {
     const ctx = document.getElementById('myChart').getContext('2d');
     
@@ -437,5 +358,8 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
     return newChartInstance;
 }
 
-// Starta initial laddning
-fetchData();
+// Starta hämtning av data
+window.fetchData = fetchData; // Gör fetchData globalt tillgänglig
+window.applyFilter = applyFilter; // Gör applyFilter globalt tillgänglig
+
+fetchData(); // Starta initial laddning
