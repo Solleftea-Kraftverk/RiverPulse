@@ -1,4 +1,8 @@
 *.db
+
+# My own exclusions
+zOld/*
+
 # Logs
 logs
 *.log
