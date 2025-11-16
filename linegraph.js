@@ -2,12 +2,10 @@
 let riverData = [];
 // Global variabel för att hålla diagraminstansen
 let chartInstance = null; 
-window.chartInstance = chartInstance; // Gör chartInstance globalt tillgänglig.
 
 // Konstanter
 const MIN_DATE_STRING = '2025-11-08'; 
 const MIN_TIMESTAMP = Date.parse(`${MIN_DATE_STRING}T00:00:00`); 
-const MAX_RETRIES = 3; // FIX: Max antal återförsök för datahämtning
 const CSS_FALLBACKS = {
     '--primary-color': '#00b4d8', 
     '--secondary-color': '#ff7f50', 
@@ -20,10 +18,11 @@ const CSS_FALLBACKS = {
 // Utility-funktion för att hämta CSS-variabler
 function getCssVariable(name) {
     const style = getComputedStyle(document.documentElement);
+    // Returnerar CSS-variabeln eller en fallback
     return style.getPropertyValue(name).trim() || CSS_FALLBACKS[name] || ''; 
 }
 
-// FIX: Plugin för att visa de senaste värdena. (Oförändrad)
+// FIX: Plugin för att visa de senaste värdena. 
 const latestValueLabelPlugin = {
     id: 'customLabels',
     latestWaterLevel: null,
@@ -75,20 +74,13 @@ const latestValueLabelPlugin = {
     }
 };
 
-// Funktion för att hitta det aktiva radio-valet
-function getActiveFilter() {
-    const active = document.querySelector('input[name="time-filter"]:checked');
-    return active ? active.value : 'day'; 
-}
 
-
-// FIX: Async function to fetch data from backend (med robust felhantering och återförsök)
-async function fetchData(retryCount = 0) {
+// Async function to fetch data from backend (utan retry-logik)
+async function fetchData() {
     try {
         const response = await fetch('https://river-pulse-data-fetcher.philip-strassenbergen.workers.dev/data');
         
         if (!response.ok) {
-            // Om HTTP-status är dålig, behandla som ett fel och trigga retry
             throw new Error(`HTTP-fel! Status: ${response.status}. Kan bero på nätverksblockering.`);
         }
 
@@ -111,35 +103,40 @@ async function fetchData(retryCount = 0) {
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
 
-        // APPLICERA FILTER BASERAT PÅ VAD SOM ÄR MARKERAT
         applyFilter(getActiveFilter()); 
+        setupFilterListeners(); // Sätt upp lyssnare ENBART efter att datan är hämtad
 
     } catch (error) {
-        // Logga felet och försök
-        console.error(`Fel vid datahämtning eller bearbetning (Försök ${retryCount + 1}/${MAX_RETRIES}):`, error.message);
-        
-        // FIX: Hantera återförsök
-        if (retryCount < MAX_RETRIES - 1) { 
-            // Vänta 1 sekund * (nuvarande försök nummer)
-            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); 
-            console.log(`Försöker ladda data igen... (Försök ${retryCount + 2})`);
-            return fetchData(retryCount + 1); // Anropa rekursivt
-        }
-
-        // FIX: Endast visa ett slutgiltigt alert efter ALLA försök har misslyckats
-        alert("KRITISKT FEL: Kunde inte ladda data efter flera försök. Diagrammet kan inte visas.");
+        console.error("Fel vid datahämtning eller bearbetning:", error.message);
+        // Återställd alert, den triggas bara en gång initialt nu.
+        alert("Kunde inte ladda data. Kontrollera konsolen för mer information.");
     }
 }
+
+// Funktion för att hitta det aktiva radio-valet
+function getActiveFilter() {
+    const active = document.querySelector('input[name="time-filter"]:checked');
+    return active ? active.value : 'day'; 
+}
+
+// Funktion för att sätta upp händelselyssnare för radio-knapparna
+function setupFilterListeners() {
+    const filters = document.querySelectorAll('input[name="time-filter"]');
+    if (filters.length > 0) {
+        filters.forEach(filter => {
+            filter.addEventListener('change', (event) => {
+                applyFilter(event.target.value);
+            });
+        });
+    }
+}
+
 
 // Funktion för att filtrera data och uppdatera diagrammet
 function applyFilter(filter) {
     if (riverData.length === 0) {
         if (chartInstance) chartInstance.update();
         return;
-    }
-
-    if (filter === 'year' && window.showToast) {
-        window.showToast(`Inga data före ${MIN_DATE_STRING}.`);
     }
 
     let startTime = 0;
@@ -214,7 +211,8 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
     
     chartInstance.options.scales.x.time.unit = unit;
     
-    chartInstance.update();
+    // Använd resize-funktionen för att tvinga Chart.js att rita om (detta är säkrare än update())
+    chartInstance.resize();
 }
 
 
@@ -236,7 +234,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
     const gridColor = 'rgba(255, 255, 255, 0.1)'; 
     const cardBg = getCssVariable('--card-bg');
 
-    const newChartInstance = new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'line', 
         data: {
             labels: timestamps, 
@@ -353,13 +351,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, pointRa
         },
         plugins: [latestValueLabelPlugin]
     });
-
-    window.chartInstance = newChartInstance;
-    return newChartInstance;
 }
 
-// Starta hämtning av data
-window.fetchData = fetchData; // Gör fetchData globalt tillgänglig
-window.applyFilter = applyFilter; // Gör applyFilter globalt tillgänglig
-
-fetchData(); // Starta initial laddning
+// Starta initial laddning
+fetchData();

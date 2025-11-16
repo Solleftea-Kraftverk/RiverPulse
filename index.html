@@ -18,29 +18,30 @@
             --text-color-dark: #a9a9b3; 
             --font-stack: 'Roboto Mono', monospace; 
         }
-        
+
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
         html, body {
-            /* Använd dvh för att hantera V/H krocken */
-            height: 100dvh; 
+            /* FIX: Använd 100dvh för stabil höjd vid mobilt rotering */
+            height: 100dvh;
             margin: 0;
             padding: 0;
             font-family: var(--font-stack);
             background-color: var(--bg-color);
             color: var(--text-color-light);
-            overflow-x: hidden; 
+            /* FIX: Ta bort overflow-x: hidden; för att inte störa rotationen */
         }
 
         .container {
             width: 100vw;
-            /* Använd min-height för att säkerställa att innehållet fyller skärmen */
-            min-height: 100dvh; 
+            /* FIX: Använd 100dvh för stabil höjd vid mobilt rotering */
+            min-height: 100dvh;
             padding: 15px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* Extra utrymme för den fasta fotnoten */
             padding-bottom: 50px; 
             max-width: 1400px; 
             margin: 0 auto;
@@ -94,7 +95,7 @@
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
         
-        /* Toast-meddelande (nödvändigt för linegraph.js) */
+        /* Toast-meddelande (valfritt, men behålls för framtida användning) */
         #toast-message {
             display: none; 
             position: fixed; 
@@ -110,7 +111,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             font-weight: 700;
         }
-        
+
         /* Fotnot CSS */
         .contact-info {
             position: fixed; 
