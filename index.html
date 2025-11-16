@@ -10,12 +10,13 @@
     <style>
         /* CSS baserad på en Dark/High-Contrast palett */
         :root {
-            --bg-color: #1a1a2e; 
-            --card-bg: #1f2038; 
-            --primary-color: #00b4d8; 
-            --secondary-color: #ff7f50; 
-            --text-color-light: #f0f0f0; 
-            --text-color-dark: #a9a9b3; 
+            /* Högkontrast palett */
+            --bg-color: #1a1a2e; /* Deep Navy/Indigo */
+            --card-bg: #1f2038; /* Lättare bakgrund för kort/diagram */
+            --primary-color: #00b4d8; /* Klar Cyan/Sky Blue (Nivå) */
+            --secondary-color: #ff7f50; /* Klar Orange/Korall (Flöde) */
+            --text-color-light: #f0f0f0; /* Off-white */
+            --text-color-dark: #a9a9b3; /* Mjuk grå för axlar/detaljer */
             --font-stack: 'Roboto Mono', monospace; 
         }
 
@@ -28,20 +29,17 @@
             font-family: var(--font-stack);
             background-color: var(--bg-color);
             color: var(--text-color-light);
-            /* VIKTIGT: Tillåter scrollning om innehållet blir för högt (mobil) */
             overflow-x: hidden; 
         }
 
         .container {
             width: 100vw;
-            /* Nu använder vi MINST 100vh, men tillåter innehåll att flöda (scrolla) */
             min-height: 100vh;
             padding: 15px; 
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* VIKTIGT: Lägg till utrymme i botten för den fasta footern */
             padding-bottom: 50px; 
         }
 
@@ -51,15 +49,26 @@
             margin: 5px 0 10px 0; 
             font-size: 1.6em; 
             font-weight: 700;
-            text-transform: uppercase;
+            /* FIX: Tog bort text-transform: uppercase; */
+        }
+        
+        /* Flexibel behållare för diagram och widget. */
+        .chart-and-widget-wrapper {
+            display: flex;
+            flex-direction: row; /* Standard: sida vid sida på stor skärm */
+            width: 100%;
+            flex-grow: 1;
+            gap: 15px;
+            max-height: calc(100vh - 180px); /* Justera höjden så det ryms */
         }
 
-        /* Responsivitet för diagrammets behållare */
+        /* Diagrambehållaren tar upp större delen av utrymmet */
         #chart-container {
             position: relative;
             flex-grow: 1; 
-            width: 100%; 
-            max-width: 100%; 
+            /* Flex-shrink: 0 för att se till att den behåller en storlek */
+            flex-basis: 70%; 
+            min-width: 0; 
             margin-bottom: 10px;
             background: var(--card-bg);
             border-radius: 8px;
@@ -67,8 +76,49 @@
             box-shadow: 0 0 15px rgba(0, 180, 216, 0.15); 
             min-height: 200px; 
         }
+
+        /* FIX: Separat widget för de senaste värdena */
+        #latest-values-widget {
+            /* Flex-shrink: 0 för att se till att den inte krymper för mycket */
+            flex-basis: 30%; 
+            min-width: 250px; 
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(255, 127, 80, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .value-card {
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--text-color-dark);
+        }
+
+        .value-card h3 {
+            font-size: 0.9em;
+            margin: 0 0 5px 0;
+            font-weight: 400;
+            color: var(--text-color-dark);
+        }
+
+        .value-card p {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin: 0;
+        }
         
-        /* Filterstil */
+        .value-card.level {
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .value-card.flow {
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        /* Filter och Fotnot CSS (från föregående steg, oförändrat) */
         .filter-controls {
             display: flex;
             justify-content: center;
@@ -94,22 +144,20 @@
             border-color: var(--primary-color);
             box-shadow: 0 2px 5px rgba(0, 180, 216, 0.5);
         }
-
-        /* FIX: Använder fast positionering för att tvinga fram synlighet */
+        
         .contact-info {
-            position: fixed; /* Hålls fast vid viewporten */
-            bottom: 0; /* Placeras i botten */
+            position: fixed; 
+            bottom: 0; 
             left: 0;
             width: 100%;
             box-sizing: border-box;
-            
             font-size: 0.8em;
             color: var(--text-color-dark);
             display: flex;
             justify-content: space-between;
             padding: 10px 20px;
-            background: rgba(26, 26, 46, 0.9); /* Halvtransparent bakgrund för att synas över allt */
-            z-index: 1000; /* Säkerställer att den ligger över annat innehåll */
+            background: rgba(26, 26, 46, 0.95); /* Mindre transparent bakgrund */
+            z-index: 1000; 
             border-top: 1px solid rgba(0, 180, 216, 0.1);
         }
 
@@ -119,8 +167,24 @@
             font-weight: 400;
         }
         
-        /* Mediafråga för att hantera små skärmar och stapla texten */
-        @media (max-width: 600px) {
+        /* Mediafråga för mobilanpassning */
+        @media (max-width: 800px) {
+            .chart-and-widget-wrapper {
+                flex-direction: column; /* Stapla diagram och widget */
+                max-height: none;
+            }
+            
+            #latest-values-widget {
+                flex-basis: auto; 
+                min-width: unset; 
+                flex-direction: row; /* Visa värdena sida vid sida i mobil */
+                justify-content: space-around;
+            }
+            
+            .value-card {
+                flex-basis: 50%;
+            }
+
             .contact-info {
                 flex-direction: column;
                 align-items: center;
@@ -133,7 +197,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>💧 RiverPulse: Nivå och Flöde Över Tid</h1>
+        <h1>💧 RiverPulse: Nivå och Flöde över Tid</h1>
 
         <div class="filter-controls">
             <input type="radio" id="filter-day" name="time-filter" value="day" checked>
@@ -149,11 +213,23 @@
             <label for="filter-year">Senaste Året</label>
         </div>
 
-        <div id="chart-container">
-            <canvas id="myChart"></canvas>
-        </div>
+        <div class="chart-and-widget-wrapper">
+            <div id="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
 
+            <div id="latest-values-widget">
+                <div class="value-card level">
+                    <h3>Senaste Nivå (m)</h3>
+                    <p id="latest-level-value">--</p>
+                </div>
+                <div class="value-card flow">
+                    <h3>Senaste Flöde (m³/s)</h3>
+                    <p id="latest-flow-value">--</p>
+                </div>
+            </div>
         </div>
+    </div>
 
     <div class="contact-info">
         <span>Data fr.o.m. 2025-11-08</span>

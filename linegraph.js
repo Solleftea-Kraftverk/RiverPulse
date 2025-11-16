@@ -5,7 +5,7 @@ let chartInstance = null;
 // Definierar den tidigaste tillåtna datan: 2025-11-08 i millisekunder
 const MIN_TIMESTAMP = Date.parse('2025-11-08T00:00:00'); 
 
-// Utility-funktion för att hämta CSS-variabler
+// Utility-funktion för att hämta CSS-variabler (Behövs ej längre, men behålls som best practice)
 function getCssVariable(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
@@ -27,7 +27,6 @@ async function fetchData() {
                 item.timestamp = Date.parse(dateStr); 
                 return item;
             })
-            // Filtrera bort ogiltiga datum OCH data FÖRE 2025-11-08
             .filter(item => !isNaN(item.timestamp) && item.timestamp >= MIN_TIMESTAMP);
 
         riverData.sort((a, b) => a.timestamp - b.timestamp);
@@ -51,9 +50,20 @@ function setupFilterListeners() {
     });
 }
 
+// FIX: Ny funktion för att uppdatera de separata värde-korten
+function updateLatestValuesWidget(latestWaterLevel, latestFlow) {
+    const levelElement = document.getElementById('latest-level-value');
+    const flowElement = document.getElementById('latest-flow-value');
+
+    levelElement.textContent = latestWaterLevel !== null ? latestWaterLevel.toFixed(2) : '--';
+    flowElement.textContent = latestFlow !== null ? latestFlow.toFixed(2) : '--';
+}
+
+
 // Funktion för att filtrera data och uppdatera diagrammet
 function applyFilter(filter) {
     if (riverData.length === 0) {
+        updateLatestValuesWidget(null, null); // Uppdatera widget även vid tomt data
         if (chartInstance) chartInstance.update();
         return;
     }
@@ -89,15 +99,18 @@ function applyFilter(filter) {
     const latestWaterLevel = waterLevels.length > 0 ? waterLevels[waterLevels.length - 1] : null;
     const latestFlow = flowValues.length > 0 ? flowValues[flowValues.length - 1] : null;
 
+    // VIKTIGT: Uppdaterar den nya widgeten
+    updateLatestValuesWidget(latestWaterLevel, latestFlow); 
+
     if (chartInstance) {
         updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow);
     } else {
-        chartInstance = createChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow);
+        chartInstance = createChart(timestamps, waterLevels, flowValues, filter);
     }
 }
 
 // Funktion för att uppdatera diagrammets data och axelkonfiguration
-function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLevel, latestFlow) {
+function updateChart(timestamps, waterLevels, flowValues, filter) {
     chartInstance.data.labels = timestamps;
     chartInstance.data.datasets[0].data = waterLevels;
     chartInstance.data.datasets[1].data = flowValues;
@@ -113,15 +126,15 @@ function updateChart(timestamps, waterLevels, flowValues, filter, latestWaterLev
     
     chartInstance.options.scales.x.time.unit = unit;
     
-    chartInstance.options.plugins.customLabels.latestWaterLevel = latestWaterLevel;
-    chartInstance.options.plugins.customLabels.latestFlow = latestFlow;
+    // Tar bort referensen till det gamla pluginet som inte används längre
+    delete chartInstance.options.plugins.customLabels;
     
     chartInstance.update();
 }
 
 
 // Funktion för att skapa diagrammet med dubbla Y-axlar
-function createChart(timestamps, waterLevels, flowValues, initialFilter, latestWaterLevel, latestFlow) {
+function createChart(timestamps, waterLevels, flowValues, initialFilter) {
     const ctx = document.getElementById('myChart').getContext('2d');
     
     let initialUnit = 'hour';
@@ -131,60 +144,8 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
         initialUnit = 'month';
     }
 
-    // Chart.js-plugin för att rita ut det senaste värdet som text
-    const latestValueLabelPlugin = {
-        id: 'customLabels',
-        latestWaterLevel: latestWaterLevel,
-        latestFlow: latestFlow,
-
-        afterDraw: (chart) => {
-            const { ctx, chartArea: { right }, scales: { 'water-level': y1, 'flow-rate': y2 } } = chart;
-            ctx.save();
-            
-            const primaryColor = getCssVariable('--primary-color');
-            const secondaryColor = getCssVariable('--secondary-color');
-            
-            const lastIndex = chart.data.labels.length - 1;
-            if (lastIndex < 0) return;
-
-            // Få X-positionen för den sista punkten
-            const xPos = chart.getDatasetMeta(0).data[lastIndex]?.x || right; 
-
-            // Ritar ut Nivå-värdet (vänster axel - Cyan)
-            if (latestWaterLevel !== null && y1.ticks.length > 0) {
-                const latestY = y1.getPixelForValue(latestWaterLevel);
-                
-                ctx.font = '700 13px var(--font-stack)';
-                ctx.textAlign = 'left';
-                ctx.fillStyle = primaryColor;
-                
-                // Använder utökad marginal för att undvika överlappning
-                ctx.fillText(
-                    latestWaterLevel.toFixed(2) + ' m', 
-                    xPos + 15, 
-                    latestY - 10 
-                );
-            }
-
-            // Ritar ut Flöde-värdet (höger axel - Orange)
-            if (latestFlow !== null && y2.ticks.length > 0) {
-                const latestY = y2.getPixelForValue(latestFlow);
-                
-                ctx.font = '700 13px var(--font-stack)';
-                ctx.textAlign = 'left';
-                ctx.fillStyle = secondaryColor;
-                
-                // Använder utökad marginal för att undvika överlappning
-                ctx.fillText(
-                    latestFlow.toFixed(2) + ' m³/s', 
-                    xPos + 15, 
-                    latestY + 20 
-                );
-            }
-
-            ctx.restore();
-        }
-    };
+    // FIX: Tar bort det gamla pluginet
+    // const latestValueLabelPlugin = { id: 'customLabels', ... }
 
     const primaryColor = getCssVariable('--primary-color');
     const secondaryColor = getCssVariable('--secondary-color');
@@ -201,34 +162,37 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                 label: 'Nivå (m)', 
                 data: waterLevels,
                 borderColor: primaryColor, 
-                backgroundColor: 'rgba(0, 180, 216, 0.1)',
+                backgroundColor: 'rgba(0, 180, 216, 0.05)', // Mindre fyllning
                 fill: 'origin', 
-                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, 
+                // FIX: Reducerad punktstorlek
+                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 5 : 2, 
                 pointBackgroundColor: primaryColor,
-                pointHoverRadius: 9,
-                borderWidth: 3, 
+                pointHoverRadius: 7,
+                borderWidth: 1.5, // FIX: Reducerad linjebredd
                 yAxisID: 'water-level',
-                tension: 0.4 // FIX: Lägger till utjämning
+                tension: 0.4
             },
             {
                 label: 'Flöde (m³/s)', 
                 data: flowValues,
                 borderColor: secondaryColor, 
-                backgroundColor: 'rgba(255, 127, 80, 0.1)',
+                backgroundColor: 'rgba(255, 127, 80, 0.05)',
                 fill: false, 
-                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 7 : 3, 
+                // FIX: Reducerad punktstorlek
+                pointRadius: (context) => context.dataIndex === context.dataset.data.length - 1 ? 5 : 2, 
                 pointBackgroundColor: secondaryColor,
-                pointHoverRadius: 9,
-                borderWidth: 3, 
+                pointHoverRadius: 7,
+                borderWidth: 1.5, // FIX: Reducerad linjebredd
                 yAxisID: 'flow-rate',
-                tension: 0.4 // FIX: Lägger till utjämning
+                tension: 0.4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false, 
             plugins: {
-                customLabels: latestValueLabelPlugin, 
+                // FIX: Tar bort referensen till det borttagna pluginet
+                // customLabels: latestValueLabelPlugin, 
                 tooltip: {
                     mode: 'index',
                     intersect: false,
@@ -311,8 +275,7 @@ function createChart(timestamps, waterLevels, flowValues, initialFilter, latestW
                     } 
                 }
             }
-        },
-        plugins: [latestValueLabelPlugin]
+        }
     });
 }
 
